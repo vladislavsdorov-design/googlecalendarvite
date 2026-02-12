@@ -1161,7 +1161,7 @@
 
 .login-input {
   width: 100%;
-  padding: 14px 16px 14px 48px;
+  padding: 14px 16px 14px 15px;
   border: 2px solid #e0e0e0;
   border-radius: 12px;
   font-size: 15px;
@@ -1260,7 +1260,7 @@
 }
 
 .login-hint {
-  color: #e1ff00;
+  color: #959595;
   font-size: 12px;
 }
 

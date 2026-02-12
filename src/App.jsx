@@ -1061,7 +1061,7 @@ export default function App() {
               </span>
             ) : (
               <button className="btn-google" onClick={loginWithGoogle}>
-                Подключить Google
+                Połącz z Google
               </button>
             )}
           </div>
