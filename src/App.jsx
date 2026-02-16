@@ -30,18 +30,31 @@ const CLIENT_ID = import.meta.env.VITE_GOOGLE_CLIENT_ID;
 const SCOPES = "https://www.googleapis.com/auth/calendar.events";
 
 // Цвета Google Calendar
+// const GOOGLE_COLORS = [
+//   { id: 1, name: "Lawendowy", hex: "#7986cb" },
+//   { id: 2, name: "Zielony", hex: "#33b679" },
+//   { id: 3, name: "Fioletowy", hex: "#8e24aa" },
+//   { id: 4, name: "Koralowy", hex: "#e67c73" },
+//   { id: 5, name: "Żółty", hex: "#f6bf26" },
+//   { id: 6, name: "Pomarańczowy", hex: "#f4511e" },
+//   { id: 7, name: "Niebieski", hex: "#039be5" },
+//   { id: 8, name: "Limonkowy", hex: "#c0ca33" },
+//   { id: 9, name: "Szary", hex: "#616161" },
+//   { id: 10, name: "Indygo", hex: "#3f51b5" },
+//   { id: 11, name: "Ciemnozielony", hex: "#0b8043" },
+// ];
 const GOOGLE_COLORS = [
-  { id: 1, name: "Lawendowy", hex: "#7986cb" },
-  { id: 2, name: "Zielony", hex: "#33b679" },
-  { id: 3, name: "Fioletowy", hex: "#8e24aa" },
-  { id: 4, name: "Koralowy", hex: "#e67c73" },
-  { id: 5, name: "Żółty", hex: "#f6bf26" },
-  { id: 6, name: "Pomarańczowy", hex: "#f4511e" },
-  { id: 7, name: "Niebieski", hex: "#039be5" },
-  { id: 8, name: "Limonkowy", hex: "#c0ca33" },
-  { id: 9, name: "Szary", hex: "#616161" },
-  { id: 10, name: "Indygo", hex: "#3f51b5" },
-  { id: 11, name: "Ciemnozielony", hex: "#0b8043" },
+  { id: 1, name: "Jasnoniebieski", hex: "#a4bdfc" },
+  { id: 2, name: "Jasnozielony", hex: "#7ae7bf" },
+  { id: 3, name: "Fioletowy", hex: "#dbadff" },
+  { id: 4, name: "Jasnoczerwony", hex: "#ff887c" },
+  { id: 5, name: "Żółty", hex: "#fbd75b" },
+  { id: 6, name: "Pomarańczowy", hex: "#ffb878" },
+  { id: 7, name: "Błękitny", hex: "#46d6db" },
+  { id: 8, name: "Szary", hex: "#e1e1e1" },
+  { id: 9, name: "Niebieski", hex: "#5484ed" },
+  { id: 10, name: "Ciemnozielony", hex: "#51b749" },
+  { id: 11, name: "Czerwony", hex: "#dc2127" },
 ];
 
 const USER_COLORS = GOOGLE_COLORS.map((c) => c.hex);
