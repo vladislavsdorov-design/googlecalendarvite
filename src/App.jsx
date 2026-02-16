@@ -433,9 +433,37 @@ export default function App() {
     return id;
   };
 
+  // const deleteEventFromFirebase = async (eventId) => {
+  //   const eventRef = ref(db, `calendarEvents/${eventId}`);
+  //   await remove(eventRef);
+  // };
   const deleteEventFromFirebase = async (eventId) => {
-    const eventRef = ref(db, `calendarEvents/${eventId}`);
-    await remove(eventRef);
+    try {
+      console.log(`Попытка удаления события ${eventId}...`);
+      console.log(`Текущий пользователь: ${auth.currentUser?.email}`);
+
+      const eventRef = ref(db, `calendarEvents/${eventId}`);
+      await remove(eventRef);
+
+      console.log(`Событие ${eventId} успешно удалено из Firebase`);
+      return true;
+    } catch (error) {
+      console.error("Ошибка при удалении из Firebase:", error);
+      console.error("Код ошибки:", error.code);
+      console.error("Сообщение:", error.message);
+
+      // Показываем понятное сообщение пользователю
+      if (error.code === "permission-denied") {
+        alert(`Ошибка доступа: У вас нет прав на удаление. 
+  Проверьте правила Firebase и убедитесь, что вы вошли с правильным email.`);
+      } else if (error.code === "unauthenticated") {
+        alert("Ошибка: Вы не авторизованы. Пожалуйста, войдите снова.");
+      } else {
+        alert(`Ошибка при удалении: ${error.message}`);
+      }
+
+      throw error; // Пробрасываем ошибку дальше
+    }
   };
 
   const getGoogleCalendarColor = (userColor) => {
