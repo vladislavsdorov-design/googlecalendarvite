@@ -1330,3 +1330,117 @@
 .monstrclas {
   font-family: "Montserrat", sans-serif;
 }
+/* Зеленый индикатор в углу */
+.copy-corner-indicator {
+  position: fixed;
+  top: 20px;
+  right: 20px;
+  background: linear-gradient(135deg, #4caf50, #45a049);
+  color: white;
+  padding: 16px 24px;
+  border-radius: 12px;
+  box-shadow: 0 8px 30px rgba(76, 175, 80, 0.3);
+  z-index: 10000;
+  animation: slideInRight 0.3s ease, pulse 2s infinite;
+  border-left: 4px solid #fff;
+  min-width: 200px;
+  transform-origin: top right;
+}
+
+.copy-corner-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.copy-corner-icon {
+  font-size: 24px;
+  background: rgba(255, 255, 255, 0.2);
+  width: 40px;
+  height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 10px;
+}
+
+.copy-corner-text {
+  font-size: 16px;
+  font-weight: 600;
+  flex: 1;
+}
+
+.copy-corner-time {
+  background: rgba(255, 255, 255, 0.2);
+  padding: 4px 8px;
+  border-radius: 20px;
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.5px;
+}
+
+@keyframes slideInRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px) scale(0.9);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 8px 30px rgba(76, 175, 80, 0.3);
+  }
+  50% {
+    box-shadow: 0 8px 40px rgba(76, 175, 80, 0.5);
+  }
+  100% {
+    box-shadow: 0 8px 30px rgba(76, 175, 80, 0.3);
+  }
+}
+
+/* Альтернативный вариант - маленький квадрат */
+.copy-corner-indicator.small {
+  padding: 8px 16px;
+  min-width: auto;
+  border-radius: 30px;
+  background: #4caf50;
+}
+
+.copy-corner-indicator.small .copy-corner-content {
+  gap: 8px;
+}
+
+.copy-corner-indicator.small .copy-corner-icon {
+  width: 24px;
+  height: 24px;
+  font-size: 14px;
+}
+
+.copy-corner-indicator.small .copy-corner-text {
+  font-size: 14px;
+}
+
+/* Если хотите квадратный вариант */
+.copy-corner-indicator.square {
+  border-radius: 8px;
+  padding: 12px;
+  min-width: 160px;
+  text-align: center;
+}
+
+.copy-corner-indicator.square .copy-corner-content {
+  flex-direction: column;
+  gap: 8px;
+}
+
+.copy-corner-indicator.square .copy-corner-icon {
+  width: 48px;
+  height: 48px;
+  font-size: 28px;
+  border-radius: 12px;
+  margin: 0 auto;
+}
