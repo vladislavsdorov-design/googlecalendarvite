@@ -4013,7 +4013,7 @@ const LoginScreen = ({ onLogin }) => {
     setLoading(true);
 
     try {
-      if (email !== "jetzone24admin@gmail.com") {
+      if (email !== "b.lewandowski@jetzone24.com") {
         throw new Error("Доступ разрешён только администратору");
       }
 
