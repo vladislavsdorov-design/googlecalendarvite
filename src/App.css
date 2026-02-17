@@ -15,7 +15,6 @@
 .app-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
   margin-bottom: 24px;
 }
 
@@ -53,6 +52,7 @@
   display: flex;
   align-items: center;
   gap: 24px;
+  flex-wrap: wrap;
 }
 
 .btn-google {
@@ -85,8 +85,9 @@
 
 .header-actions {
   display: flex;
-  align-items: center;
   gap: 12px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
 }
 
 .bulk-mode-toggle {
@@ -494,7 +495,6 @@
   justify-content: flex-end;
   gap: 12px;
   padding: 20px 24px;
-  border-top: 1px solid #f0f0f0;
 }
 
 /* Формы */
@@ -721,8 +721,13 @@
   background: white;
   border: 1px solid #e0e0e0;
   color: #5f6368;
+  font-family: "Montserrat", sans-serif;
+  transition: 0.3s;
 }
-
+.btn-secondary:hover {
+  background-color: black;
+  color: white;
+}
 .btn-danger {
   background: #dc3545;
   color: white;
@@ -938,7 +943,7 @@
 .stat-value {
   font-size: 28px;
   font-weight: 600;
-  color: #1a73e8;
+  color: #485200;
   margin-bottom: 4px;
 }
 
@@ -1335,14 +1340,15 @@
   position: fixed;
   top: 20px;
   right: 20px;
-  background: linear-gradient(135deg, #4caf50, #45a049);
+  background: linear-gradient(135deg, #0000005f, #0a99117b);
+  backdrop-filter: blur(4px);
   color: white;
   padding: 16px 24px;
   border-radius: 12px;
   box-shadow: 0 8px 30px rgba(76, 175, 80, 0.3);
   z-index: 10000;
   animation: slideInRight 0.3s ease, pulse 2s infinite;
-  border-left: 4px solid #fff;
+  font-family: "Montserrat", sans-serif;
   min-width: 200px;
   transform-origin: top right;
 }
@@ -1354,7 +1360,7 @@
 }
 
 .copy-corner-icon {
-  font-size: 24px;
+  font-size: 19px;
   background: rgba(255, 255, 255, 0.2);
   width: 40px;
   height: 40px;
@@ -1365,7 +1371,7 @@
 }
 
 .copy-corner-text {
-  font-size: 16px;
+  font-size: 13px;
   font-weight: 600;
   flex: 1;
 }
@@ -1443,4 +1449,108 @@
   font-size: 28px;
   border-radius: 12px;
   margin: 0 auto;
+}
+.monthly-stat-item {
+  background-color: #c1c1c10f;
+  border-radius: 5px;
+  padding: 10px;
+  border: solid 1px rgb(239, 239, 239);
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.monthly-stats-grid {
+  display: flex;
+  margin: 10px;
+  gap: 20px;
+  justify-content: space-around;
+}
+.monthly-stat-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+.monthly-stats-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+.user-avatar-small {
+  font-size: 20px;
+  font-family: "Archivo Black", sans-serif;
+  font-weight: 400;
+  text-align: right;
+  padding-right: 20px;
+  color: #00000064;
+  border-radius: 5px;
+}
+/* font-family: "Montserrat", sans-serif; */
+.user-name {
+  font-size: 20px;
+  font-family: "Montserrat", sans-serif;
+  padding-top: 5px;
+}
+.user-email {
+  font-size: 15px;
+  font-family: "Montserrat", sans-serif;
+}
+.monthly-details {
+  display: flex;
+  justify-content: space-evenly;
+}
+.detail-row {
+  font-size: 15px;
+  font-family: "Montserrat", sans-serif;
+}
+.spandetail {
+  padding-right: 5px;
+}
+.month-info {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: "Special Gothic Expanded One", sans-serif;
+  font-weight: 300;
+  margin: 20px 0px 20px;
+  font-size: 20px;
+  gap: 10px;
+  letter-spacing: 1px;
+  font-weight: 400;
+}
+.statmonthly {
+  display: flex;
+  align-items: center;
+  flex-direction: column;
+}
+.monthly-overview {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  justify-content: space-around;
+  padding: 10px;
+  background-color: #f6f6f64e;
+  border: solid 1px rgb(239, 239, 239);
+  border-radius: 5px;
+}
+.month-nav-btn-small {
+  width: 50px;
+  height: 25px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: 0.3s;
+  background-color: rgb(243, 243, 243);
+  border: solid 1px rgb(168, 168, 168);
+  border-radius: 5px;
+}
+.month-nav-btn-small:hover {
+  background-color: rgb(205, 205, 205);
+}
+.modal-title-with-nav {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+}
+.statmies {
 }
