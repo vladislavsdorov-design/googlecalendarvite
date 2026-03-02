@@ -27,6 +27,13 @@
 //   return `${year}-${month}-${day}`;
 // };
 
+// const formatDateForDisplay = (date) => {
+//   return date.toLocaleDateString("pl-PL", {
+//     day: "numeric",
+//     month: "short",
+//   });
+// };
+
 // const calculateHoursDiff = (startTime, endTime) => {
 //   const [startHour, startMinute] = startTime.split(":").map(Number);
 //   const [endHour, endMinute] = endTime.split(":").map(Number);
@@ -84,7 +91,9 @@
 //           <div className="employee-login-field">
 //             <label className="employee-login-label">Email służbowy</label>
 //             <div className="employee-login-input-wrapper">
-//               <span className="employee-login-input-icon">📧</span>
+//               <span className="login-input-icon">
+//                 <i className="fa-regular fa-envelope"></i>
+//               </span>
 //               <input
 //                 type="email"
 //                 className="employee-login-input"
@@ -100,7 +109,9 @@
 //           <div className="employee-login-field">
 //             <label className="employee-login-label">Hasło</label>
 //             <div className="employee-login-input-wrapper">
-//               <span className="employee-login-input-icon">🔒</span>
+//               <span className="login-input-icon">
+//                 <i className="fa-solid fa-shield-halved"></i>{" "}
+//               </span>
 //               <input
 //                 type="password"
 //                 className="employee-login-input"
@@ -167,6 +178,52 @@
 //   );
 // };
 
+// // Компонент переключателя вида календаря
+// const ViewToggle = ({ view, onViewChange }) => {
+//   return (
+//     <div className="view-toggle">
+//       <button
+//         className={`view-toggle-btn ${view === "month" ? "active" : ""}`}
+//         onClick={() => onViewChange("month")}
+//       >
+//         Miesiąc
+//       </button>
+//       <button
+//         className={`view-toggle-btn ${view === "week" ? "active" : ""}`}
+//         onClick={() => onViewChange("week")}
+//       >
+//         Tydzień
+//       </button>
+//       <button
+//         className={`view-toggle-btn ${view === "day" ? "active" : ""}`}
+//         onClick={() => onViewChange("day")}
+//       >
+//         Dzień
+//       </button>
+//     </div>
+//   );
+// };
+
+// // Компонент переключателя "Только мои смены"
+// const MyShiftsToggle = ({ showOnlyMyShifts, onToggle }) => {
+//   return (
+//     <label className="shifts-toggle">
+//       <div className="shifts-toggle__switch">
+//         <input
+//           type="checkbox"
+//           className="shifts-toggle__checkbox"
+//           checked={showOnlyMyShifts}
+//           onChange={(e) => onToggle(e.target.checked)}
+//         />
+//         <span className="shifts-toggle__slider"></span>
+//       </div>
+//       <span className="shifts-toggle__label">
+//         {showOnlyMyShifts ? "Tylko moje zmiany" : "Wszystkie zmiany"}
+//       </span>
+//     </label>
+//   );
+// };
+
 // // Основной компонент
 // export default function EmployeeView() {
 //   const [employee, setEmployee] = useState(null);
@@ -177,19 +234,29 @@
 //   const [users, setUsers] = useState([]);
 //   const [showModal, setShowModal] = useState(false);
 //   const [showStatsModal, setShowStatsModal] = useState(false);
+//   const [showOnlyMyShifts, setShowOnlyMyShifts] = useState(false);
+//   const [calendarView, setCalendarView] = useState("month"); // 'month', 'week', 'day'
+//   const [selectedDate, setSelectedDate] = useState(null);
+//   const [statsMonth, setStatsMonth] = useState(new Date());
+//   // НОВОЕ: состояние для детального просмотра дня на мобильных
+//   const [selectedDayDetail, setSelectedDayDetail] = useState(null);
 
 //   const [availabilityForm, setAvailabilityForm] = useState({
 //     id: null,
 //     title: "Dostępność",
 //     date: formatDateToYMD(new Date()),
-//     startTime: "09:00",
-//     endTime: "17:00",
+//     startTime: "13:00",
+//     endTime: "20:00",
 //     userId: null,
 //     isPending: true,
 //   });
 
-//   const [stats, setStats] = useState({});
-//   const [selectedDate, setSelectedDate] = useState(null);
+//   const [monthlyStats, setMonthlyStats] = useState({
+//     totalShifts: 0,
+//     totalHours: 0,
+//     pendingShifts: 0,
+//     pendingHours: 0,
+//   });
 
 //   useEffect(() => {
 //     loadInitialData();
@@ -197,16 +264,15 @@
 
 //   useEffect(() => {
 //     if (employee) {
-//       calculateEmployeeStatistics();
+//       calculateMonthlyStatistics();
 //     }
-//   }, [events, pendingEvents, employee]);
+//   }, [events, pendingEvents, employee, statsMonth]);
 
 //   // Удаление только СВОИХ подтвержденных событий из ожидающих
 //   useEffect(() => {
 //     const removeConfirmedPendingEvents = () => {
 //       if (!employee) return;
 
-//       // Создаем Set из ключей ВСЕХ опубликованных событий
 //       const publishedEventKeys = new Set(
 //         Object.values(events).map(
 //           (event) =>
@@ -214,23 +280,16 @@
 //         )
 //       );
 
-//       // Фильтруем ожидающие события
 //       const updatedPendingEvents = pendingEvents.filter((pendingEvent) => {
-//         // Если это событие другого сотрудника - ВСЕГДА ОСТАВЛЯЕМ
 //         if (pendingEvent.userId !== employee.id) {
 //           return true;
 //         }
 
-//         // Если это мое событие - проверяем, не опубликовано ли оно
 //         const pendingKey = `${pendingEvent.userId}_${pendingEvent.date}_${pendingEvent.startTime}_${pendingEvent.endTime}`;
 //         return !publishedEventKeys.has(pendingKey);
 //       });
 
 //       if (updatedPendingEvents.length !== pendingEvents.length) {
-//         console.log(
-//           "Usunięto potwierdzone wydarzenia z listy oczekujących:",
-//           pendingEvents.length - updatedPendingEvents.length
-//         );
 //         setPendingEvents(updatedPendingEvents);
 //         localStorage.setItem(
 //           "pendingEvents",
@@ -294,14 +353,25 @@
 //     localStorage.setItem("pendingEvents", JSON.stringify(newPendingEvents));
 //   };
 
-//   const calculateEmployeeStatistics = () => {
+//   const calculateMonthlyStatistics = () => {
 //     if (!employee) return;
 
+//     const year = statsMonth.getFullYear();
+//     const month = statsMonth.getMonth();
+
+//     const startDate = new Date(year, month, 1);
+//     const endDate = new Date(year, month + 1, 0);
+
+//     const startStr = formatDateToYMD(startDate);
+//     const endStr = formatDateToYMD(endDate);
+
+//     // Фильтруем события за выбранный месяц
 //     const userEvents = Object.values(events).filter(
-//       (e) => e.userId === employee.id
+//       (e) => e.userId === employee.id && e.date >= startStr && e.date <= endStr
 //     );
+
 //     const userPendingEvents = pendingEvents.filter(
-//       (e) => e.userId === employee.id
+//       (e) => e.userId === employee.id && e.date >= startStr && e.date <= endStr
 //     );
 
 //     const totalShifts = userEvents.length;
@@ -317,7 +387,7 @@
 //       pendingHours += calculateHoursDiff(event.startTime, event.endTime);
 //     });
 
-//     setStats({
+//     setMonthlyStats({
 //       totalShifts,
 //       pendingShifts,
 //       totalHours: parseFloat(totalHours.toFixed(1)),
@@ -350,13 +420,24 @@
 //         id: null,
 //         title: "Dostępność",
 //         date: dateStr,
-//         startTime: "09:00",
-//         endTime: "17:00",
+//         startTime: "13:00",
+//         endTime: "20:00",
 //         userId: employee.id,
 //         isPending: true,
 //       });
 //     }
 //     setShowModal(true);
+//   };
+
+//   // НОВАЯ: функция для обработки клика по дню с учетом мобильных устройств
+//   const handleDayClick = (date) => {
+//     if (calendarView === "month" && window.innerWidth <= 768) {
+//       // На телефоне в месячном виде показываем детальный просмотр
+//       setSelectedDayDetail(date);
+//     } else {
+//       // На десктопе или в других видах открываем модалку добавления
+//       handleDateClick(date);
+//     }
 //   };
 
 //   const handleCreateAvailability = () => {
@@ -393,8 +474,8 @@
 //       id: null,
 //       title: "Dostępność",
 //       date: formatDateToYMD(new Date()),
-//       startTime: "09:00",
-//       endTime: "17:00",
+//       startTime: "13:00",
+//       endTime: "20:00",
 //       userId: employee.id,
 //       isPending: true,
 //     });
@@ -412,9 +493,7 @@
 //     return users.find((user) => user.id === userId);
 //   };
 
-//   // ИСПРАВЛЕННАЯ функция для получения всех событий на дату
 //   const getAllEventsForDate = (dateStr) => {
-//     // Получаем все опубликованные события из Firebase
 //     const published = Object.values(events)
 //       .filter((e) => e.date === dateStr)
 //       .map((event) => ({
@@ -423,7 +502,6 @@
 //         isPending: false,
 //       }));
 
-//     // Получаем все ожидающие события из localStorage
 //     const pending = pendingEvents
 //       .filter((e) => e.date === dateStr)
 //       .map((event) => ({
@@ -432,9 +510,14 @@
 //         isPending: true,
 //       }));
 
-//     // Объединяем и возвращаем ВСЕ события
-//     // Важно: фильтруем только те, у которых есть пользователь
-//     return [...published, ...pending].filter((event) => event.user);
+//     let allEvents = [...published, ...pending].filter((event) => event.user);
+
+//     // Фильтруем по переключателю "Только мои смены"
+//     if (showOnlyMyShifts && employee) {
+//       allEvents = allEvents.filter((event) => event.userId === employee.id);
+//     }
+
+//     return allEvents;
 //   };
 
 //   const getDaysInMonth = (year, month) => {
@@ -443,18 +526,34 @@
 
 //   const getFirstDayOfMonth = (year, month) => {
 //     const day = new Date(year, month, 1).getDay();
+//     // В JS: 0 - воскресенье, 1 - понедельник, ..., 6 - суббота
+//     // Нам нужно: понедельник = 0, воскресенье = 6
 //     return day === 0 ? 6 : day - 1;
 //   };
 
-//   const navigateMonth = (direction) => {
+//   const navigateDate = (direction) => {
 //     setCurrentDate((prev) => {
+//       const newDate = new Date(prev);
+//       if (calendarView === "month") {
+//         newDate.setMonth(prev.getMonth() + direction);
+//       } else if (calendarView === "week") {
+//         newDate.setDate(prev.getDate() + direction * 7);
+//       } else {
+//         newDate.setDate(prev.getDate() + direction);
+//       }
+//       return newDate;
+//     });
+//   };
+
+//   const navigateStatsMonth = (direction) => {
+//     setStatsMonth((prev) => {
 //       const newDate = new Date(prev);
 //       newDate.setMonth(prev.getMonth() + direction);
 //       return newDate;
 //     });
 //   };
 
-//   const renderCalendar = () => {
+//   const renderMonthView = () => {
 //     if (!employee) return null;
 
 //     const year = currentDate.getFullYear();
@@ -465,9 +564,7 @@
 //     const days = [];
 
 //     for (let i = 0; i < firstDay; i++) {
-//       days.push(
-//         <div key={`empty-${i}`} className="employee-calendar-day empty"></div>
-//       );
+//       days.push(<div key={`empty-${i}`} className="calendar-day empty"></div>);
 //     }
 
 //     for (let day = 1; day <= daysInMonth; day++) {
@@ -475,65 +572,56 @@
 //       const dateStr = formatDateToYMD(date);
 //       const dayEvents = getAllEventsForDate(dateStr);
 
-//       const myEvents = dayEvents.filter((e) => e.userId === employee?.id);
-//       const otherEvents = dayEvents.filter((e) => e.userId !== employee?.id);
-
 //       const isToday = formatDateToYMD(new Date()) === dateStr;
 
 //       days.push(
 //         <div
 //           key={day}
-//           className={`employee-calendar-day ${isToday ? "today" : ""} ${
+//           className={`calendar-day ${isToday ? "today" : ""} ${
 //             selectedDate === dateStr ? "selected" : ""
 //           }`}
-//           onClick={() => handleDateClick(date)}
+//           onClick={() => handleDayClick(date)}
 //         >
-//           <div className="employee-day-number">{day}</div>
+//           <div className="day-number">{day}</div>
 
-//           {(myEvents.length > 0 || otherEvents.length > 0) && (
-//             <div className="employee-shift-square">
-//               {/* Сначала показываем свои события */}
-//               {myEvents.map((event) => (
-//                 <div
-//                   key={event.id}
-//                   className={`employee-shift-item my-shift ${
-//                     event.isPending ? "pending" : ""
-//                   }`}
-//                   style={{
-//                     backgroundColor: event.user?.color || "#4A90E2",
-//                   }}
-//                   onClick={(e) => {
-//                     e.stopPropagation();
-//                     if (event.isPending) {
-//                       handleDateClick(date);
-//                     }
-//                   }}
-//                 >
-//                   <span className="employee-shift-initial">
-//                     {event.user?.name?.charAt(0) || "?"}
-//                   </span>
-//                   <span className="employee-shift-time">{event.startTime}</span>
-//                   {event.isPending && (
-//                     <span className="employee-shift-pending-badge">⏳</span>
-//                   )}
-//                 </div>
-//               ))}
+//           {dayEvents.length > 0 && (
+//             <div className="day-events-compact">
+//               {dayEvents.slice(0, 2).map((event) => {
+//                 // Получаем короткое имя (максимум 4 буквы)
+//                 const nameParts = event.user?.name?.split(" ") || ["?"];
+//                 let displayName = "";
 
-//               {/* Потом показываем события других сотрудников */}
-//               {otherEvents.map((event) => (
-//                 <div
-//                   key={event.id}
-//                   className="employee-shift-item other-shift"
-//                   style={{
-//                     backgroundColor: event.user?.color || "#4A90E2",
-//                   }}
-//                 >
-//                   <span className="employee-shift-initial">
-//                     {event.user?.name?.charAt(0) || "?"}
-//                   </span>
-//                   <span className="employee-shift-time">{event.startTime}</span>
-//                 </div>
-//               ))}
+//                 if (nameParts.length > 1) {
+//                   // Если есть имя и фамилия - берем первую букву фамилии
+//                   displayName = nameParts[0].substring(0, 3) + nameParts[1][0];
+//                 } else {
+//                   // Если только имя - берем первые 4 буквы
+//                   displayName = nameParts[0].substring(0, 4);
+//                 }
+
+//                 return (
+//                   <div
+//                     key={event.id}
+//                     className={`event-name-badge ${
+//                       event.isPending ? "pending" : ""
+//                     }`}
+//                     style={{
+//                       backgroundColor: event.user?.color || "#666",
+//                       opacity: event.isPending ? 0.7 : 1,
+//                       borderLeft: event.isPending ? "2px dashed #000" : "none",
+//                     }}
+//                     title={`${event.user?.name}: ${event.startTime} - ${event.endTime}`}
+//                   >
+//                     <span className="event-name-text">{displayName}</span>
+//                     {event.isPending && (
+//                       <span className="pending-indicator">⏳</span>
+//                     )}
+//                   </div>
+//                 );
+//               })}
+//               {dayEvents.length > 2 && (
+//                 <div className="event-more-badge">+{dayEvents.length - 2}</div>
+//               )}
 //             </div>
 //           )}
 //         </div>
@@ -543,15 +631,143 @@
 //     return days;
 //   };
 
+//   const renderWeekView = () => {
+//     if (!employee) return null;
+
+//     const startOfWeek = new Date(currentDate);
+//     startOfWeek.setDate(currentDate.getDate() - currentDate.getDay() + 1);
+
+//     const days = [];
+//     for (let i = 0; i < 7; i++) {
+//       const date = new Date(startOfWeek);
+//       date.setDate(startOfWeek.getDate() + i);
+//       const dateStr = formatDateToYMD(date);
+//       const dayEvents = getAllEventsForDate(dateStr);
+//       const isToday = formatDateToYMD(new Date()) === dateStr;
+
+//       days.push(
+//         <div key={i} className={`week-day ${isToday ? "today" : ""}`}>
+//           <div className="week-day-header">
+//             <div className="week-day-name">
+//               {date.toLocaleDateString("pl-PL", { weekday: "short" })}
+//             </div>
+//             <div
+//               className={`week-day-number ${
+//                 selectedDate === dateStr ? "selected" : ""
+//               }`}
+//               onClick={() => handleDateClick(date)}
+//             >
+//               {date.getDate()}
+//             </div>
+//           </div>
+//           <div className="week-day-events">
+//             {dayEvents.map((event) => (
+//               <div
+//                 key={event.id}
+//                 className={`week-event ${event.isPending ? "pending" : ""}`}
+//                 style={{ borderLeftColor: event.user?.color || "#666" }}
+//                 onClick={() => handleDateClick(date)}
+//               >
+//                 <span className="event-time">{event.startTime}</span>
+//                 <span className="event-name">{event.user?.name}</span>
+//                 {event.isPending && <span className="pending-badge">⏳</span>}
+//               </div>
+//             ))}
+//           </div>
+//         </div>
+//       );
+//     }
+
+//     return <div className="week-view">{days}</div>;
+//   };
+
+//   const renderDayView = () => {
+//     if (!employee) return null;
+
+//     const dateStr = formatDateToYMD(currentDate);
+//     const dayEvents = getAllEventsForDate(dateStr);
+//     const isToday = formatDateToYMD(new Date()) === dateStr;
+
+//     return (
+//       <div className="day-view">
+//         <div className={`day-header ${isToday ? "today" : ""}`}>
+//           <div className="day-title">
+//             {currentDate.toLocaleDateString("pl-PL", {
+//               weekday: "long",
+//               day: "numeric",
+//               month: "long",
+//               year: "numeric",
+//             })}
+//           </div>
+//         </div>
+//         <div className="day-events-list">
+//           {dayEvents.length === 0 ? (
+//             <div className="no-events">Brak wydarzeń w tym dniu</div>
+//           ) : (
+//             dayEvents.map((event) => (
+//               <div
+//                 key={event.id}
+//                 className={`day-event ${event.isPending ? "pending" : ""}`}
+//                 style={{
+//                   backgroundColor: `${event.user?.color}10`,
+//                   borderLeftColor: event.user?.color || "#666",
+//                 }}
+//                 onClick={() => handleDateClick(currentDate)}
+//               >
+//                 <div className="event-time-badge">
+//                   {event.startTime} - {event.endTime}
+//                 </div>
+//                 <div className="event-details">
+//                   <span
+//                     className="event-user"
+//                     style={{ color: event.user?.color }}
+//                   >
+//                     {event.user?.name}
+//                   </span>
+//                   <span className="event-title">{event.title}</span>
+//                   {event.isPending && (
+//                     <span className="pending-badge">⏳ Oczekuje</span>
+//                   )}
+//                 </div>
+//               </div>
+//             ))
+//           )}
+//         </div>
+//       </div>
+//     );
+//   };
+
+//   const renderCalendar = () => {
+//     switch (calendarView) {
+//       case "week":
+//         return renderWeekView();
+//       case "day":
+//         return renderDayView();
+//       default:
+//         return (
+//           <>
+//             <div className="calendar-weekdays">
+//               {["Pn", "Wt", "Śr", "Cz", "Pt", "Sb", "Nd"].map((day) => (
+//                 <div key={day} className="weekday">
+//                   {day}
+//                 </div>
+//               ))}
+//             </div>
+//             <div className="calendar-grid">{renderMonthView()}</div>
+//           </>
+//         );
+//     }
+//   };
+
 //   const handleLogout = () => {
 //     setEmployee(null);
 //   };
 
 //   if (loading) {
 //     return (
-//       <div className="employee-loading-screen">
-//         <div className="employee-loading-spinner" />
-//         <div className="employee-loading-text">Ładowanie...</div>
+//       <div className="loading-screen">
+//         <div className="loading-spinner" />
+//         <div className="loading-text">Ładowanie...</div>
 //       </div>
 //     );
 //   }
@@ -561,29 +777,11 @@
 //   }
 
 //   return (
-//     <div className="employee-app-container">
-//       <header className="employee-app-header">
-//         <div className="employee-header-left">
-//           <img className="employee-logo-red" src="/img/logo.png" alt="logo" />
-//           <div className="employee-badge">
-//             <span
-//               className="employee-avatar-small"
-//               style={{ backgroundColor: employee.color }}
-//             >
-//               {employee.name?.charAt(0)}
-//             </span>
-//             <span className="employee-info">
-//               <span className="employee-name-header">{employee.name}</span>
-//               <span className="employee-email-header">{employee.email}</span>
-//             </span>
-//           </div>
-//         </div>
-
-//         <div className="employee-header-actions">
-//           <button
-//             className="employee-btn-icon"
-//             onClick={() => setShowStatsModal(true)}
-//           >
+//     <div className="app-container">
+//       <header className="app-header">
+//         <div className="header-actions">
+//           <img className="logo" src="/img/logo.png" alt="logo" />
+//           <button className="icon-btn" onClick={() => setShowStatsModal(true)}>
 //             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
 //               <path
 //                 d="M2 18H18M4 14L6 9L9 13L13 7L16 11L18 9"
@@ -592,41 +790,65 @@
 //                 strokeLinecap="round"
 //               />
 //             </svg>
-//             <span>Moje statystyki</span>
+//             <span className="btn-label">Statystyki</span>
 //           </button>
 
 //           <EmployeeLogoutButton onLogout={handleLogout} />
 //         </div>
+//         <div className="header-left">
+//           <div className="user-badge">
+//             <span
+//               className="avatar"
+//               style={{ backgroundColor: employee.color }}
+//             >
+//               {employee.name?.charAt(0)}
+//             </span>
+//             <div className="user-info">
+//               <span className="user-name">{employee.name}</span>
+//               <span className="user-email">{employee.email}</span>
+//             </div>
+//           </div>
+//         </div>
 //       </header>
 
-//       <div className="employee-mode-indicator">
-//         <div className="employee-mode-icon">👤</div>
-//         <div className="employee-mode-text">
+//       <div className="mode-indicator">
+//         <div className="mode-icon">
+//           <i
+//             className="fa-brands fa-earlybirds"
+//             style={{ color: "rgb(104, 104, 104)" }}
+//           ></i>
+//         </div>
+//         <div className="mode-text">
 //           <strong>Tryb pracownika</strong>
 //           <span>Kliknij na dzień, aby dodać swoją dostępność</span>
 //         </div>
 //       </div>
 
-//       <div className="employee-legend">
+//       <div className="controls-bar">
+//         <ViewToggle view={calendarView} onViewChange={setCalendarView} />
+//         <MyShiftsToggle
+//           showOnlyMyShifts={showOnlyMyShifts}
+//           onToggle={setShowOnlyMyShifts}
+//         />
+//       </div>
+
+//       <div className="legend">
 //         <div className="legend-item">
-//           <div className="legend-color my-shift"></div>
+//           <div className="legend-dot my-shift"></div>
 //           <span>Moja dostępność</span>
 //         </div>
 //         <div className="legend-item">
-//           <div className="legend-color other-shift"></div>
+//           <div className="legend-dot other-shift"></div>
 //           <span>Inni pracownicy</span>
 //         </div>
 //         <div className="legend-item">
-//           <div className="legend-color pending"></div>
-//           <span>Oczekuje na publikację</span>
+//           <div className="legend-dot pending"></div>
+//           <span>Oczekuje</span>
 //         </div>
 //       </div>
 
-//       <div className="employee-month-nav">
-//         <button
-//           className="employee-month-nav-btn"
-//           onClick={() => navigateMonth(-1)}
-//         >
+//       <div className="navigation-bar">
+//         <button className="nav-btn" onClick={() => navigateDate(-1)}>
 //           <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
 //             <path
 //               d="M12 16L6 10L12 4"
@@ -636,16 +858,27 @@
 //             />
 //           </svg>
 //         </button>
-//         <h2 className="employee-month-title">
-//           {currentDate.toLocaleDateString("pl-PL", {
-//             month: "long",
-//             year: "numeric",
-//           })}
+//         <h2 className="date-title">
+//           {calendarView === "month" &&
+//             currentDate.toLocaleDateString("pl-PL", {
+//               month: "long",
+//               year: "numeric",
+//             })}
+//           {calendarView === "week" &&
+//             `Tydzień ${Math.ceil(
+//               currentDate.getDate() / 7
+//             )} ${currentDate.toLocaleDateString("pl-PL", {
+//               month: "long",
+//               year: "numeric",
+//             })}`}
+//           {calendarView === "day" &&
+//             currentDate.toLocaleDateString("pl-PL", {
+//               day: "numeric",
+//               month: "long",
+//               year: "numeric",
+//             })}
 //         </h2>
-//         <button
-//           className="employee-month-nav-btn"
-//           onClick={() => navigateMonth(1)}
-//         >
+//         <button className="nav-btn" onClick={() => navigateDate(1)}>
 //           <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
 //             <path
 //               d="M8 16L14 10L8 4"
@@ -657,35 +890,26 @@
 //         </button>
 //       </div>
 
-//       <div className="employee-calendar">
-//         <div className="employee-calendar-weekdays">
-//           {["Pn", "Wt", "Śr", "Cz", "Pt", "Sb", "Nd"].map((day) => (
-//             <div key={day} className="employee-weekday">
-//               {day}
-//             </div>
-//           ))}
-//         </div>
-//         <div className="employee-calendar-grid">{renderCalendar()}</div>
-//       </div>
+//       <div className="calendar-container">{renderCalendar()}</div>
 
 //       {/* Модалка доступности */}
 //       {showModal && (
-//         <div className="employee-modal-overlay">
-//           <div className="employee-modal availability-modal">
-//             <div className="employee-modal-header">
-//               <h3 className="employee-modal-title">
+//         <div className="modal-overlay">
+//           <div className="modal">
+//             <div className="modal-header">
+//               <h3 className="modal-title">
 //                 {availabilityForm.id ? "Edytuj dostępność" : "Dodaj dostępność"}
 //               </h3>
 //               <button
-//                 className="employee-modal-close"
+//                 className="modal-close"
 //                 onClick={() => {
 //                   setShowModal(false);
 //                   setAvailabilityForm({
 //                     id: null,
 //                     title: "Dostępność",
 //                     date: formatDateToYMD(new Date()),
-//                     startTime: "09:00",
-//                     endTime: "17:00",
+//                     startTime: "13:00",
+//                     endTime: "20:00",
 //                     userId: employee.id,
 //                     isPending: true,
 //                   });
@@ -702,12 +926,12 @@
 //               </button>
 //             </div>
 
-//             <div className="employee-modal-content">
-//               <div className="employee-form-section">
-//                 <label className="employee-form-label">Data</label>
+//             <div className="modal-content">
+//               <div className="form-group">
+//                 <label className="form-label">Data</label>
 //                 <input
 //                   type="date"
-//                   className="employee-form-input"
+//                   className="form-input"
 //                   value={availabilityForm.date}
 //                   onChange={(e) =>
 //                     setAvailabilityForm({
@@ -718,12 +942,12 @@
 //                 />
 //               </div>
 
-//               <div className="employee-form-section">
-//                 <label className="employee-form-label">Godziny</label>
-//                 <div className="employee-time-inputs">
+//               <div className="form-group">
+//                 <label className="form-label">Godziny</label>
+//                 <div className="time-inputs">
 //                   <input
 //                     type="time"
-//                     className="employee-form-input time"
+//                     className="form-input time"
 //                     value={availabilityForm.startTime}
 //                     onChange={(e) =>
 //                       setAvailabilityForm({
@@ -732,10 +956,10 @@
 //                       })
 //                     }
 //                   />
-//                   <span className="employee-time-separator">—</span>
+//                   <span className="time-separator">—</span>
 //                   <input
 //                     type="time"
-//                     className="employee-form-input time"
+//                     className="form-input time"
 //                     value={availabilityForm.endTime}
 //                     onChange={(e) =>
 //                       setAvailabilityForm({
@@ -747,11 +971,11 @@
 //                 </div>
 //               </div>
 
-//               <div className="employee-form-section">
-//                 <label className="employee-form-label">Nazwa</label>
+//               <div className="form-group">
+//                 <label className="form-label">Nazwa</label>
 //                 <input
 //                   type="text"
-//                   className="employee-form-input"
+//                   className="form-input"
 //                   value={availabilityForm.title}
 //                   onChange={(e) =>
 //                     setAvailabilityForm({
@@ -759,35 +983,40 @@
 //                       title: e.target.value,
 //                     })
 //                   }
-//                   placeholder="Dostępność, Urlóp, itp."
+//                   placeholder="Dostępność, Urlop, itp."
 //                 />
 //               </div>
 
-//               <div className="employee-mode-badge">
-//                 <span className="employee-badge-icon">⏳</span>
+//               <div className="info-badge">
+//                 <span className="badge-icon">
+//                   <i
+//                     className="fa-solid fa-hourglass-half"
+//                     style={{ color: "rgb(104, 104, 104)" }}
+//                   ></i>
+//                 </span>
 //                 <span>Dostępność zostanie dodana do listy oczekujących</span>
 //               </div>
 //             </div>
 
-//             <div className="employee-modal-footer">
+//             <div className="modal-footer">
 //               {availabilityForm.id && (
 //                 <button
-//                   className="employee-btn employee-btn-danger"
+//                   className="btn btn-danger"
 //                   onClick={() => handleDeleteAvailability(availabilityForm.id)}
 //                 >
 //                   Usuń
 //                 </button>
 //               )}
 //               <button
-//                 className="employee-btn employee-btn-secondary"
+//                 className="btn btn-secondary"
 //                 onClick={() => {
 //                   setShowModal(false);
 //                   setAvailabilityForm({
 //                     id: null,
 //                     title: "Dostępność",
 //                     date: formatDateToYMD(new Date()),
-//                     startTime: "09:00",
-//                     endTime: "17:00",
+//                     startTime: "13:00",
+//                     endTime: "20:00",
 //                     userId: employee.id,
 //                     isPending: true,
 //                   });
@@ -796,10 +1025,10 @@
 //                 Anuluj
 //               </button>
 //               <button
-//                 className="employee-btn employee-btn-primary"
+//                 className="btn btn-primary"
 //                 onClick={handleCreateAvailability}
 //               >
-//                 {availabilityForm.id ? "Zapisz" : "Dodaj dostępność"}
+//                 {availabilityForm.id ? "Zapisz" : "Dodaj"}
 //               </button>
 //             </div>
 //           </div>
@@ -808,12 +1037,12 @@
 
 //       {/* Модалка статистики */}
 //       {showStatsModal && (
-//         <div className="employee-modal-overlay">
-//           <div className="employee-modal stats-modal">
-//             <div className="employee-modal-header">
-//               <h3 className="employee-modal-title">Moje statystyki</h3>
+//         <div className="modal-overlay">
+//           <div className="modal stats-modal">
+//             <div className="modal-header">
+//               <h3 className="modal-title">Statystyki miesięczne</h3>
 //               <button
-//                 className="employee-modal-close"
+//                 className="modal-close"
 //                 onClick={() => setShowStatsModal(false)}
 //               >
 //                 <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
@@ -827,55 +1056,241 @@
 //               </button>
 //             </div>
 
-//             <div className="employee-stats-content">
-//               <div className="employee-stats-overview">
-//                 <div className="employee-stat-card">
-//                   <div className="employee-stat-value">
-//                     {stats.totalShifts || 0}
-//                   </div>
-//                   <div className="employee-stat-label">Opublikowane zmiany</div>
+//             <div className="stats-month-nav">
+//               <button
+//                 className="month-nav-btn"
+//                 onClick={() => navigateStatsMonth(-1)}
+//               >
+//                 <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+//                   <path
+//                     d="M12 16L6 10L12 4"
+//                     stroke="currentColor"
+//                     strokeWidth="1.5"
+//                     strokeLinecap="round"
+//                   />
+//                 </svg>
+//               </button>
+//               <span className="month-display">
+//                 {statsMonth.toLocaleDateString("pl-PL", {
+//                   month: "long",
+//                   year: "numeric",
+//                 })}
+//               </span>
+//               <button
+//                 className="month-nav-btn"
+//                 onClick={() => navigateStatsMonth(1)}
+//               >
+//                 <svg width="16" height="16" viewBox="0 0 20 20" fill="none">
+//                   <path
+//                     d="M8 16L14 10L8 4"
+//                     stroke="currentColor"
+//                     strokeWidth="1.5"
+//                     strokeLinecap="round"
+//                   />
+//                 </svg>
+//               </button>
+//             </div>
+
+//             <div className="stats-content">
+//               <div className="stats-grid">
+//                 <div className="stat-card">
+//                   <div className="stat-value">{monthlyStats.totalShifts}</div>
+//                   <div className="stat-label">Opublikowane zmiany</div>
 //                 </div>
-//                 <div className="employee-stat-card">
-//                   <div className="employee-stat-value">
-//                     {stats.pendingShifts || 0}
-//                   </div>
-//                   <div className="employee-stat-label">Oczekujące</div>
+//                 <div className="stat-card">
+//                   <div className="stat-value">{monthlyStats.pendingShifts}</div>
+//                   <div className="stat-label">Oczekujące</div>
 //                 </div>
-//                 <div className="employee-stat-card">
-//                   <div className="employee-stat-value">
-//                     {(stats.totalHours || 0).toFixed(1)}
+//                 <div className="stat-card">
+//                   <div className="stat-value">
+//                     {monthlyStats.totalHours.toFixed(1)}h
 //                   </div>
-//                   <div className="employee-stat-label">
-//                     Przepracowane godziny
-//                   </div>
+//                   <div className="stat-label">Przepracowane</div>
 //                 </div>
 //               </div>
 
-//               <div className="employee-stats-details">
-//                 <div className="employee-detail-row">
+//               <div className="stats-details">
+//                 <div className="detail-row">
 //                   <span>Łącznie godzin (z oczekującymi):</span>
 //                   <strong>
 //                     {(
-//                       (stats.totalHours || 0) + (stats.pendingHours || 0)
+//                       monthlyStats.totalHours + monthlyStats.pendingHours
 //                     ).toFixed(1)}{" "}
 //                     h
 //                   </strong>
 //                 </div>
-//                 <div className="employee-detail-row">
+//                 <div className="detail-row">
 //                   <span>W tym oczekujące:</span>
-//                   <strong>{(stats.pendingHours || 0).toFixed(1)} h</strong>
+//                   <strong>{monthlyStats.pendingHours.toFixed(1)} h</strong>
 //                 </div>
 //               </div>
 //             </div>
 
-//             <div className="employee-modal-footer">
+//             <div className="modal-footer">
 //               <button
-//                 className="employee-btn employee-btn-secondary"
+//                 className="btn btn-secondary"
 //                 onClick={() => setShowStatsModal(false)}
 //               >
 //                 Zamknij
 //               </button>
 //             </div>
+//           </div>
+//         </div>
+//       )}
+
+//       {/* Детальный просмотр дня для мобильных */}
+//       {selectedDayDetail && (
+//         <div className="day-detail-modal">
+//           <div className="day-detail-header">
+//             <div className="day-detail-header-left">
+//               <h3 className="day-detail-title">
+//                 {selectedDayDetail.toLocaleDateString("pl-PL", {
+//                   weekday: "long",
+//                   day: "numeric",
+//                   month: "long",
+//                 })}
+//               </h3>
+//               <span className="day-detail-events-count">
+//                 {getAllEventsForDate(formatDateToYMD(selectedDayDetail)).length}{" "}
+//                 wydarzeń
+//               </span>
+//             </div>
+//             <button
+//               className="day-detail-close"
+//               onClick={() => setSelectedDayDetail(null)}
+//             >
+//               <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+//                 <path
+//                   d="M15 5L5 15M5 5L15 15"
+//                   stroke="currentColor"
+//                   strokeWidth="1.5"
+//                   strokeLinecap="round"
+//                 />
+//               </svg>
+//             </button>
+//           </div>
+
+//           <div className="day-detail-content">
+//             {/* Кнопка добавления своей доступности */}
+//             <button
+//               className="add-availability-button"
+//               onClick={() => {
+//                 setSelectedDayDetail(null);
+//                 handleDateClick(selectedDayDetail);
+//               }}
+//             >
+//               <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+//                 <path
+//                   d="M9 3V15M3 9H15"
+//                   stroke="currentColor"
+//                   strokeWidth="1.5"
+//                   strokeLinecap="round"
+//                 />
+//               </svg>
+//               <span>Dodaj swoją dostępność</span>
+//             </button>
+
+//             {/* Список событий */}
+//             <div className="day-events-list">
+//               {getAllEventsForDate(formatDateToYMD(selectedDayDetail)).map(
+//                 (event) => (
+//                   <div
+//                     key={event.id}
+//                     className={`day-detail-event ${
+//                       event.userId === employee.id ? "my-shift" : "other-shift"
+//                     } ${event.isPending ? "pending" : ""}`}
+//                     onClick={() => {
+//                       if (event.userId === employee.id && event.isPending) {
+//                         setSelectedDayDetail(null);
+//                         handleDateClick(selectedDayDetail);
+//                       }
+//                     }}
+//                   >
+//                     <div className="event-avatar-wrapper">
+//                       <div
+//                         className="event-avatar"
+//                         style={{ backgroundColor: event.user?.color || "#666" }}
+//                       >
+//                         {event.user?.name?.charAt(0)}
+//                       </div>
+//                       {event.userId === employee.id && (
+//                         <span className="event-owner-badge">Moje</span>
+//                       )}
+//                     </div>
+
+//                     <div className="event-info">
+//                       <div className="event-header">
+//                         <span className="event-name">{event.user?.name}</span>
+//                         <span className="event-time-badge">
+//                           {event.startTime} - {event.endTime}
+//                         </span>
+//                       </div>
+
+//                       <div className="event-details">
+//                         <span className="event-title">{event.title}</span>
+//                         {event.isPending && (
+//                           <span className="event-status pending-status">
+//                             <i
+//                               className="fa-solid fa-hourglass-half"
+//                               style={{ color: "rgb(104, 104, 104)" }}
+//                             ></i>{" "}
+//                             Oczekuje na potwierdzenie
+//                           </span>
+//                         )}
+//                       </div>
+//                     </div>
+
+//                     {event.isPending && event.userId === employee.id && (
+//                       <button
+//                         className="event-edit-button"
+//                         onClick={(e) => {
+//                           e.stopPropagation();
+//                           setSelectedDayDetail(null);
+//                           handleDateClick(selectedDayDetail);
+//                         }}
+//                       >
+//                         <svg
+//                           width="16"
+//                           height="16"
+//                           viewBox="0 0 16 16"
+//                           fill="none"
+//                         >
+//                           <path
+//                             d="M11.5 2.5L13.5 4.5M3 13L6.5 12L13.5 5L11 2.5L4 9.5L3 13Z"
+//                             stroke="currentColor"
+//                             strokeWidth="1.5"
+//                             strokeLinecap="round"
+//                             strokeLinejoin="round"
+//                           />
+//                         </svg>
+//                       </button>
+//                     )}
+//                   </div>
+//                 )
+//               )}
+//             </div>
+
+//             {getAllEventsForDate(formatDateToYMD(selectedDayDetail)).length ===
+//               0 && (
+//               <div className="no-events">
+//                 <div className="no-events-icon">
+//                   <i
+//                     className="fa-regular fa-calendar-days"
+//                     style={{ color: "rgb(104, 104, 104)" }}
+//                   ></i>
+//                 </div>
+//                 <p>Brak wydarzeń w tym dniu</p>
+//                 <button
+//                   className="btn btn-primary btn-small"
+//                   onClick={() => {
+//                     setSelectedDayDetail(null);
+//                     handleDateClick(selectedDayDetail);
+//                   }}
+//                 >
+//                   Dodaj swoją dostępność
+//                 </button>
+//               </div>
+//             )}
 //           </div>
 //         </div>
 //       )}
@@ -887,7 +1302,7 @@ import { getDatabase, ref, onValue } from "firebase/database";
 import { initializeApp } from "firebase/app";
 import "./EmployeeView.css";
 
-// Firebase конфигурация
+// Firebase конфигурация с ВАШИМИ данными из .env файла
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -899,8 +1314,31 @@ const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
-const app = initializeApp(firebaseConfig);
-const db = getDatabase(app);
+// Проверяем, что все переменные окружения загружены
+console.log("Firebase Config:", {
+  apiKey: firebaseConfig.apiKey ? "✓" : "✗",
+  authDomain: firebaseConfig.authDomain ? "✓" : "✗",
+  databaseURL: firebaseConfig.databaseURL ? "✓" : "✗",
+  projectId: firebaseConfig.projectId ? "✓" : "✗",
+  storageBucket: firebaseConfig.storageBucket ? "✓" : "✗",
+  messagingSenderId: firebaseConfig.messagingSenderId ? "✓" : "✗",
+  appId: firebaseConfig.appId ? "✓" : "✗",
+});
+
+// Инициализация Firebase
+let app;
+let db;
+
+try {
+  app = initializeApp(firebaseConfig);
+  db = getDatabase(app);
+  console.log(
+    "Firebase инициализирован успешно с проектом:",
+    firebaseConfig.projectId
+  );
+} catch (error) {
+  console.error("Ошибка инициализации Firebase:", error);
+}
 
 const DEFAULT_PASSWORD = "VsJetZone24pr";
 
@@ -941,6 +1379,9 @@ const EmployeeLoginScreen = ({ onLogin, employees }) => {
     setLoading(true);
 
     try {
+      console.log("Поиск сотрудника с email:", email);
+      console.log("Доступные сотрудники:", employees);
+
       const employee = employees.find((emp) => emp.email === email);
 
       if (!employee) {
@@ -951,6 +1392,7 @@ const EmployeeLoginScreen = ({ onLogin, employees }) => {
         throw new Error("Nieprawidłowe hasło");
       }
 
+      console.log("Вход выполнен успешно для:", employee.name);
       onLogin(employee);
     } catch (error) {
       console.error("Ошибка входа:", error);
@@ -964,7 +1406,7 @@ const EmployeeLoginScreen = ({ onLogin, employees }) => {
     <div className="employee-login-container">
       <div className="employee-login-card">
         <div className="employee-login-header">
-          <div className="employee-login-icon">JetZone24</div>
+          <div className="employee-login-icon">Baza24</div>
           <h1 className="employee-login-title">Panel pracownika</h1>
           <p className="employee-login-subtitle">
             Zaloguj się, aby zarządzać swoją dostępnością
@@ -981,7 +1423,7 @@ const EmployeeLoginScreen = ({ onLogin, employees }) => {
               <input
                 type="email"
                 className="employee-login-input"
-                placeholder="twoj.email@jetzone24.com"
+                placeholder="twoj.email@firma.pl"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 required
@@ -994,7 +1436,7 @@ const EmployeeLoginScreen = ({ onLogin, employees }) => {
             <label className="employee-login-label">Hasło</label>
             <div className="employee-login-input-wrapper">
               <span className="login-input-icon">
-                <i className="fa-solid fa-shield-halved"></i>{" "}
+                <i className="fa-solid fa-shield-halved"></i>
               </span>
               <input
                 type="password"
@@ -1035,7 +1477,7 @@ const EmployeeLoginScreen = ({ onLogin, employees }) => {
         </form>
 
         <div className="employee-login-footer">
-          <p>Dostęp tylko dla pracowników JetZone24</p>
+          <p>Dostęp tylko dla pracowników</p>
         </div>
       </div>
     </div>
@@ -1119,11 +1561,12 @@ export default function EmployeeView() {
   const [showModal, setShowModal] = useState(false);
   const [showStatsModal, setShowStatsModal] = useState(false);
   const [showOnlyMyShifts, setShowOnlyMyShifts] = useState(false);
-  const [calendarView, setCalendarView] = useState("month"); // 'month', 'week', 'day'
+  const [calendarView, setCalendarView] = useState("month");
   const [selectedDate, setSelectedDate] = useState(null);
   const [statsMonth, setStatsMonth] = useState(new Date());
-  // НОВОЕ: состояние для детального просмотра дня на мобильных
   const [selectedDayDetail, setSelectedDayDetail] = useState(null);
+  const [firebaseError, setFirebaseError] = useState(false);
+  const [firebaseErrorMessage, setFirebaseErrorMessage] = useState("");
 
   const [availabilityForm, setAvailabilityForm] = useState({
     id: null,
@@ -1143,6 +1586,37 @@ export default function EmployeeView() {
   });
 
   useEffect(() => {
+    // Проверяем наличие всех необходимых переменных окружения
+    const requiredEnvVars = [
+      "VITE_FIREBASE_API_KEY",
+      "VITE_FIREBASE_AUTH_DOMAIN",
+      "VITE_FIREBASE_DATABASE_URL",
+      "VITE_FIREBASE_PROJECT_ID",
+      "VITE_FIREBASE_STORAGE_BUCKET",
+      "VITE_FIREBASE_MESSAGING_SENDER_ID",
+      "VITE_FIREBASE_APP_ID",
+    ];
+
+    const missingVars = requiredEnvVars.filter(
+      (varName) => !import.meta.env[varName]
+    );
+
+    if (missingVars.length > 0) {
+      setFirebaseError(true);
+      setFirebaseErrorMessage(
+        `Brakujące zmienne środowiskowe: ${missingVars.join(", ")}`
+      );
+      setLoading(false);
+      return;
+    }
+
+    if (!db) {
+      setFirebaseError(true);
+      setFirebaseErrorMessage("Nie można zainicjalizować Firebase");
+      setLoading(false);
+      return;
+    }
+
     loadInitialData();
   }, []);
 
@@ -1152,7 +1626,6 @@ export default function EmployeeView() {
     }
   }, [events, pendingEvents, employee, statsMonth]);
 
-  // Удаление только СВОИХ подтвержденных событий из ожидающих
   useEffect(() => {
     const removeConfirmedPendingEvents = () => {
       if (!employee) return;
@@ -1202,34 +1675,58 @@ export default function EmployeeView() {
   };
 
   const loadUsersFromFirebase = () => {
+    if (!db) return;
+
     const usersRef = ref(db, "users");
-    onValue(usersRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        const usersMap = new Map();
-        Object.values(data).forEach((user) => {
-          if (user && user.id) {
-            usersMap.set(user.id, user);
-          }
-        });
-        const uniqueUsers = Array.from(usersMap.values());
-        setUsers(uniqueUsers);
-      } else {
-        setUsers([]);
+    onValue(
+      usersRef,
+      (snapshot) => {
+        const data = snapshot.val();
+        console.log("Загружены пользователи:", data);
+        if (data) {
+          const usersMap = new Map();
+          Object.values(data).forEach((user) => {
+            if (user && user.id) {
+              usersMap.set(user.id, user);
+            }
+          });
+          const uniqueUsers = Array.from(usersMap.values());
+          setUsers(uniqueUsers);
+        } else {
+          setUsers([]);
+        }
+      },
+      (error) => {
+        console.error("Błąd ładowania użytkowników:", error);
+        setFirebaseError(true);
+        setFirebaseErrorMessage(
+          `Błąd ładowania użytkowników: ${error.message}`
+        );
       }
-    });
+    );
   };
 
   const loadEventsFromFirebase = () => {
+    if (!db) return;
+
     const eventsRef = ref(db, "calendarEvents");
-    onValue(eventsRef, (snapshot) => {
-      const data = snapshot.val();
-      if (data) {
-        setEvents(data);
-      } else {
-        setEvents({});
+    onValue(
+      eventsRef,
+      (snapshot) => {
+        const data = snapshot.val();
+        console.log("Загружены события:", data);
+        if (data) {
+          setEvents(data);
+        } else {
+          setEvents({});
+        }
+      },
+      (error) => {
+        console.error("Błąd ładowania wydarzeń:", error);
+        setFirebaseError(true);
+        setFirebaseErrorMessage(`Błąd ładowania wydarzeń: ${error.message}`);
       }
-    });
+    );
   };
 
   const savePendingEvents = (newPendingEvents) => {
@@ -1249,7 +1746,6 @@ export default function EmployeeView() {
     const startStr = formatDateToYMD(startDate);
     const endStr = formatDateToYMD(endDate);
 
-    // Фильтруем события за выбранный месяц
     const userEvents = Object.values(events).filter(
       (e) => e.userId === employee.id && e.date >= startStr && e.date <= endStr
     );
@@ -1313,13 +1809,10 @@ export default function EmployeeView() {
     setShowModal(true);
   };
 
-  // НОВАЯ: функция для обработки клика по дню с учетом мобильных устройств
   const handleDayClick = (date) => {
     if (calendarView === "month" && window.innerWidth <= 768) {
-      // На телефоне в месячном виде показываем детальный просмотр
       setSelectedDayDetail(date);
     } else {
-      // На десктопе или в других видах открываем модалку добавления
       handleDateClick(date);
     }
   };
@@ -1396,7 +1889,6 @@ export default function EmployeeView() {
 
     let allEvents = [...published, ...pending].filter((event) => event.user);
 
-    // Фильтруем по переключателю "Только мои смены"
     if (showOnlyMyShifts && employee) {
       allEvents = allEvents.filter((event) => event.userId === employee.id);
     }
@@ -1410,8 +1902,6 @@ export default function EmployeeView() {
 
   const getFirstDayOfMonth = (year, month) => {
     const day = new Date(year, month, 1).getDay();
-    // В JS: 0 - воскресенье, 1 - понедельник, ..., 6 - суббота
-    // Нам нужно: понедельник = 0, воскресенье = 6
     return day === 0 ? 6 : day - 1;
   };
 
@@ -1471,15 +1961,12 @@ export default function EmployeeView() {
           {dayEvents.length > 0 && (
             <div className="day-events-compact">
               {dayEvents.slice(0, 2).map((event) => {
-                // Получаем короткое имя (максимум 4 буквы)
                 const nameParts = event.user?.name?.split(" ") || ["?"];
                 let displayName = "";
 
                 if (nameParts.length > 1) {
-                  // Если есть имя и фамилия - берем первую букву фамилии
                   displayName = nameParts[0].substring(0, 3) + nameParts[1][0];
                 } else {
-                  // Если только имя - берем первые 4 буквы
                   displayName = nameParts[0].substring(0, 4);
                 }
 
@@ -1656,6 +2143,25 @@ export default function EmployeeView() {
     );
   }
 
+  if (firebaseError) {
+    return (
+      <div className="error-screen">
+        <div className="error-icon">⚠️</div>
+        <h2>Błąd połączenia z bazą danych</h2>
+        <p>
+          {firebaseErrorMessage ||
+            "Nie można połączyć się z Firebase. Sprawdź połączenie internetowe i spróbuj ponownie."}
+        </p>
+        <button
+          className="btn btn-primary"
+          onClick={() => window.location.reload()}
+        >
+          Odśwież stronę
+        </button>
+      </div>
+    );
+  }
+
   if (!employee) {
     return <EmployeeLoginScreen onLogin={setEmployee} employees={users} />;
   }
@@ -1776,7 +2282,6 @@ export default function EmployeeView() {
 
       <div className="calendar-container">{renderCalendar()}</div>
 
-      {/* Модалка доступности */}
       {showModal && (
         <div className="modal-overlay">
           <div className="modal">
@@ -1919,7 +2424,6 @@ export default function EmployeeView() {
         </div>
       )}
 
-      {/* Модалка статистики */}
       {showStatsModal && (
         <div className="modal-overlay">
           <div className="modal stats-modal">
@@ -2022,7 +2526,6 @@ export default function EmployeeView() {
         </div>
       )}
 
-      {/* Детальный просмотр дня для мобильных */}
       {selectedDayDetail && (
         <div className="day-detail-modal">
           <div className="day-detail-header">
@@ -2055,7 +2558,6 @@ export default function EmployeeView() {
           </div>
 
           <div className="day-detail-content">
-            {/* Кнопка добавления своей доступности */}
             <button
               className="add-availability-button"
               onClick={() => {
@@ -2074,7 +2576,6 @@ export default function EmployeeView() {
               <span>Dodaj swoją dostępność</span>
             </button>
 
-            {/* Список событий */}
             <div className="day-events-list">
               {getAllEventsForDate(formatDateToYMD(selectedDayDetail)).map(
                 (event) => (
