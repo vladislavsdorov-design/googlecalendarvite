@@ -1566,13 +1566,31 @@ export default function EmployeeView() {
     pendingShifts: 0,
     pendingHours: 0,
   });
-
+  // Загружаем данные после восстановления сотрудника из localStorage
+  useEffect(() => {
+    if (employee) {
+      // Данные уже загружаются в других useEffect
+      console.log("Восстановлена сессия для:", employee.name);
+    }
+  }, [employee]);
   useEffect(() => {
     if (!db) {
       setFirebaseError(true);
       setFirebaseErrorMessage("Nie można połączyć się z bazą danych");
       setLoading(false);
       return;
+    }
+
+    // Проверяем, есть ли сохраненный сотрудник в localStorage
+    const savedEmployee = localStorage.getItem("employee");
+    if (savedEmployee) {
+      try {
+        const parsedEmployee = JSON.parse(savedEmployee);
+        setEmployee(parsedEmployee);
+      } catch (e) {
+        console.error("Ошибка загрузки сохраненного сотрудника:", e);
+        localStorage.removeItem("employee");
+      }
     }
 
     loadInitialData();
@@ -1937,6 +1955,12 @@ export default function EmployeeView() {
       return newDate;
     });
   };
+  const handleEmployeeLogin = (employeeData) => {
+    // Сохраняем в localStorage
+    localStorage.setItem("employee", JSON.stringify(employeeData));
+    // Устанавливаем в состояние
+    setEmployee(employeeData);
+  };
 
   const renderMonthView = () => {
     if (!employee) return null;
@@ -2141,6 +2165,9 @@ export default function EmployeeView() {
   };
 
   const handleLogout = () => {
+    // Удаляем из localStorage
+    localStorage.removeItem("employee");
+    // Очищаем состояние
     setEmployee(null);
   };
 
@@ -2170,7 +2197,9 @@ export default function EmployeeView() {
   }
 
   if (!employee) {
-    return <EmployeeLoginScreen onLogin={setEmployee} employees={users} />;
+    return (
+      <EmployeeLoginScreen onLogin={handleEmployeeLogin} employees={users} />
+    );
   }
 
   return (
