@@ -1129,8 +1129,8 @@ export default function EmployeeView() {
     id: null,
     title: "Dostępność",
     date: formatDateToYMD(new Date()),
-    startTime: "09:00",
-    endTime: "17:00",
+    startTime: "13:00",
+    endTime: "20:00",
     userId: null,
     isPending: true,
   });
@@ -1304,8 +1304,8 @@ export default function EmployeeView() {
         id: null,
         title: "Dostępność",
         date: dateStr,
-        startTime: "09:00",
-        endTime: "17:00",
+        startTime: "13:00",
+        endTime: "20:00",
         userId: employee.id,
         isPending: true,
       });
@@ -1358,8 +1358,8 @@ export default function EmployeeView() {
       id: null,
       title: "Dostępność",
       date: formatDateToYMD(new Date()),
-      startTime: "09:00",
-      endTime: "17:00",
+      startTime: "13:00",
+      endTime: "20:00",
       userId: employee.id,
       isPending: true,
     });
@@ -1792,8 +1792,8 @@ export default function EmployeeView() {
                     id: null,
                     title: "Dostępność",
                     date: formatDateToYMD(new Date()),
-                    startTime: "09:00",
-                    endTime: "17:00",
+                    startTime: "13:00",
+                    endTime: "20:00",
                     userId: employee.id,
                     isPending: true,
                   });
@@ -1872,7 +1872,12 @@ export default function EmployeeView() {
               </div>
 
               <div className="info-badge">
-                <span className="badge-icon">⏳</span>
+                <span className="badge-icon">
+                  <i
+                    className="fa-solid fa-hourglass-half"
+                    style={{ color: "rgb(104, 104, 104)" }}
+                  ></i>
+                </span>
                 <span>Dostępność zostanie dodana do listy oczekujących</span>
               </div>
             </div>
@@ -1894,8 +1899,8 @@ export default function EmployeeView() {
                     id: null,
                     title: "Dostępność",
                     date: formatDateToYMD(new Date()),
-                    startTime: "09:00",
-                    endTime: "17:00",
+                    startTime: "13:00",
+                    endTime: "20:00",
                     userId: employee.id,
                     isPending: true,
                   });
@@ -2109,7 +2114,11 @@ export default function EmployeeView() {
                         <span className="event-title">{event.title}</span>
                         {event.isPending && (
                           <span className="event-status pending-status">
-                            ⏳ Oczekuje na potwierdzenie
+                            <i
+                              className="fa-solid fa-hourglass-half"
+                              style={{ color: "rgb(104, 104, 104)" }}
+                            ></i>{" "}
+                            Oczekuje na potwierdzenie
                           </span>
                         )}
                       </div>
@@ -2148,7 +2157,12 @@ export default function EmployeeView() {
             {getAllEventsForDate(formatDateToYMD(selectedDayDetail)).length ===
               0 && (
               <div className="no-events">
-                <div className="no-events-icon">📅</div>
+                <div className="no-events-icon">
+                  <i
+                    className="fa-regular fa-calendar-days"
+                    style={{ color: "rgb(104, 104, 104)" }}
+                  ></i>
+                </div>
                 <p>Brak wydarzeń w tym dniu</p>
                 <button
                   className="btn btn-primary btn-small"

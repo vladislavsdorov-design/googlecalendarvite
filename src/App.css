@@ -53,6 +53,7 @@
   align-items: center;
   gap: 24px;
   flex-wrap: wrap;
+  justify-content: center;
 }
 
 .btn-google {
@@ -739,7 +740,7 @@
   padding: 6px 12px;
   font-size: 13px;
   margin-top: 20px;
-  background: #adadad33;
+  background: #ffffff00;
   border: 1px solid #000000;
   border-radius: 6px;
   color: #000000;
@@ -1057,7 +1058,7 @@
 
   .header-actions {
     flex-wrap: wrap;
-    justify-content: space-between;
+    justify-content: space-around;
   }
 
   .calendar-day {

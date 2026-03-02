@@ -98,7 +98,7 @@ body {
   align-items: center;
   gap: 12px;
   background-color: var(--bg-secondary);
-  padding: 6px 30px;
+  padding: 10px 20px;
   font-family: "Montserrat", sans-serif;
   border-radius: 40px;
 }
@@ -169,6 +169,7 @@ body {
   display: flex;
   align-items: center;
   border-radius: 10px;
+  color: black;
   font-family: "Montserrat", sans-serif;
   padding: 8px 10px;
 }
@@ -761,7 +762,7 @@ body {
 .info-badge {
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 11px;
   padding: 12px;
   background-color: var(--bg-secondary);
   border-radius: 8px;
