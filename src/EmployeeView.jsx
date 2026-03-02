@@ -1302,7 +1302,7 @@ import { getDatabase, ref, onValue } from "firebase/database";
 import { initializeApp } from "firebase/app";
 import "./EmployeeView.css";
 
-// Firebase конфигурация с ВАШИМИ данными из .env файла
+// Firebase конфигурация из переменных окружения
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -1314,15 +1314,11 @@ const firebaseConfig = {
   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 };
 
-// Проверяем, что все переменные окружения загружены
-console.log("Firebase Config:", {
+// Проверяем наличие всех переменных
+console.log("EmployeeView Firebase Config:", {
   apiKey: firebaseConfig.apiKey ? "✓" : "✗",
-  authDomain: firebaseConfig.authDomain ? "✓" : "✗",
   databaseURL: firebaseConfig.databaseURL ? "✓" : "✗",
   projectId: firebaseConfig.projectId ? "✓" : "✗",
-  storageBucket: firebaseConfig.storageBucket ? "✓" : "✗",
-  messagingSenderId: firebaseConfig.messagingSenderId ? "✓" : "✗",
-  appId: firebaseConfig.appId ? "✓" : "✗",
 });
 
 // Инициализация Firebase
@@ -1330,14 +1326,11 @@ let app;
 let db;
 
 try {
-  app = initializeApp(firebaseConfig);
+  app = initializeApp(firebaseConfig, "employee-app");
   db = getDatabase(app);
-  console.log(
-    "Firebase инициализирован успешно с проектом:",
-    firebaseConfig.projectId
-  );
+  console.log("EmployeeView Firebase инициализирован успешно");
 } catch (error) {
-  console.error("Ошибка инициализации Firebase:", error);
+  console.error("EmployeeView Ошибка инициализации Firebase:", error);
 }
 
 const DEFAULT_PASSWORD = "VsJetZone24pr";
@@ -1586,33 +1579,10 @@ export default function EmployeeView() {
   });
 
   useEffect(() => {
-    // Проверяем наличие всех необходимых переменных окружения
-    const requiredEnvVars = [
-      "VITE_FIREBASE_API_KEY",
-      "VITE_FIREBASE_AUTH_DOMAIN",
-      "VITE_FIREBASE_DATABASE_URL",
-      "VITE_FIREBASE_PROJECT_ID",
-      "VITE_FIREBASE_STORAGE_BUCKET",
-      "VITE_FIREBASE_MESSAGING_SENDER_ID",
-      "VITE_FIREBASE_APP_ID",
-    ];
-
-    const missingVars = requiredEnvVars.filter(
-      (varName) => !import.meta.env[varName]
-    );
-
-    if (missingVars.length > 0) {
-      setFirebaseError(true);
-      setFirebaseErrorMessage(
-        `Brakujące zmienne środowiskowe: ${missingVars.join(", ")}`
-      );
-      setLoading(false);
-      return;
-    }
-
+    // Проверяем наличие Firebase
     if (!db) {
       setFirebaseError(true);
-      setFirebaseErrorMessage("Nie można zainicjalizować Firebase");
+      setFirebaseErrorMessage("Nie można połączyć się z bazą danych");
       setLoading(false);
       return;
     }
@@ -1626,6 +1596,7 @@ export default function EmployeeView() {
     }
   }, [events, pendingEvents, employee, statsMonth]);
 
+  // Удаление только СВОИХ подтвержденных событий из ожидающих
   useEffect(() => {
     const removeConfirmedPendingEvents = () => {
       if (!employee) return;
@@ -1682,7 +1653,7 @@ export default function EmployeeView() {
       usersRef,
       (snapshot) => {
         const data = snapshot.val();
-        console.log("Загружены пользователи:", data);
+        console.log("EmployeeView - загружены пользователи:", data);
         if (data) {
           const usersMap = new Map();
           Object.values(data).forEach((user) => {
@@ -1697,7 +1668,7 @@ export default function EmployeeView() {
         }
       },
       (error) => {
-        console.error("Błąd ładowania użytkowników:", error);
+        console.error("EmployeeView - ошибка загрузки пользователей:", error);
         setFirebaseError(true);
         setFirebaseErrorMessage(
           `Błąd ładowania użytkowników: ${error.message}`
@@ -1714,7 +1685,7 @@ export default function EmployeeView() {
       eventsRef,
       (snapshot) => {
         const data = snapshot.val();
-        console.log("Загружены события:", data);
+        console.log("EmployeeView - загружены события:", data);
         if (data) {
           setEvents(data);
         } else {
@@ -1722,7 +1693,7 @@ export default function EmployeeView() {
         }
       },
       (error) => {
-        console.error("Błąd ładowania wydarzeń:", error);
+        console.error("EmployeeView - ошибка загрузки событий:", error);
         setFirebaseError(true);
         setFirebaseErrorMessage(`Błąd ładowania wydarzeń: ${error.message}`);
       }
@@ -1746,6 +1717,7 @@ export default function EmployeeView() {
     const startStr = formatDateToYMD(startDate);
     const endStr = formatDateToYMD(endDate);
 
+    // Фильтруем события за выбранный месяц
     const userEvents = Object.values(events).filter(
       (e) => e.userId === employee.id && e.date >= startStr && e.date <= endStr
     );
@@ -1809,10 +1781,13 @@ export default function EmployeeView() {
     setShowModal(true);
   };
 
+  // Функция для обработки клика по дню с учетом мобильных устройств
   const handleDayClick = (date) => {
     if (calendarView === "month" && window.innerWidth <= 768) {
+      // На телефоне в месячном виде показываем детальный просмотр
       setSelectedDayDetail(date);
     } else {
+      // На десктопе или в других видах открываем модалку добавления
       handleDateClick(date);
     }
   };
@@ -1889,6 +1864,7 @@ export default function EmployeeView() {
 
     let allEvents = [...published, ...pending].filter((event) => event.user);
 
+    // Фильтруем по переключателю "Только мои смены"
     if (showOnlyMyShifts && employee) {
       allEvents = allEvents.filter((event) => event.userId === employee.id);
     }
@@ -1902,6 +1878,8 @@ export default function EmployeeView() {
 
   const getFirstDayOfMonth = (year, month) => {
     const day = new Date(year, month, 1).getDay();
+    // В JS: 0 - воскресенье, 1 - понедельник, ..., 6 - суббота
+    // Нам нужно: понедельник = 0, воскресенье = 6
     return day === 0 ? 6 : day - 1;
   };
 
@@ -1961,12 +1939,15 @@ export default function EmployeeView() {
           {dayEvents.length > 0 && (
             <div className="day-events-compact">
               {dayEvents.slice(0, 2).map((event) => {
+                // Получаем короткое имя (максимум 4 буквы)
                 const nameParts = event.user?.name?.split(" ") || ["?"];
                 let displayName = "";
 
                 if (nameParts.length > 1) {
+                  // Если есть имя и фамилия - берем первую букву фамилии
                   displayName = nameParts[0].substring(0, 3) + nameParts[1][0];
                 } else {
+                  // Если только имя - берем первые 4 буквы
                   displayName = nameParts[0].substring(0, 4);
                 }
 
@@ -2282,6 +2263,7 @@ export default function EmployeeView() {
 
       <div className="calendar-container">{renderCalendar()}</div>
 
+      {/* Модалка доступности */}
       {showModal && (
         <div className="modal-overlay">
           <div className="modal">
@@ -2424,6 +2406,7 @@ export default function EmployeeView() {
         </div>
       )}
 
+      {/* Модалка статистики */}
       {showStatsModal && (
         <div className="modal-overlay">
           <div className="modal stats-modal">
@@ -2526,6 +2509,7 @@ export default function EmployeeView() {
         </div>
       )}
 
+      {/* Детальный просмотр дня для мобильных */}
       {selectedDayDetail && (
         <div className="day-detail-modal">
           <div className="day-detail-header">
@@ -2558,6 +2542,7 @@ export default function EmployeeView() {
           </div>
 
           <div className="day-detail-content">
+            {/* Кнопка добавления своей доступности */}
             <button
               className="add-availability-button"
               onClick={() => {
@@ -2576,6 +2561,7 @@ export default function EmployeeView() {
               <span>Dodaj swoją dostępność</span>
             </button>
 
+            {/* Список событий */}
             <div className="day-events-list">
               {getAllEventsForDate(formatDateToYMD(selectedDayDetail)).map(
                 (event) => (
