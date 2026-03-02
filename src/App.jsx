@@ -1,8 +1,15 @@
 // import { useEffect, useState } from "react";
+// import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 // import { initializeApp } from "firebase/app";
-
-// import { getDatabase, ref, set, onValue, remove } from "firebase/database";
-// import EmployeeView from "./EmployeeView";
+// import {
+//   getDatabase,
+//   ref,
+//   set,
+//   onValue,
+//   remove,
+//   update,
+// } from "firebase/database";
+// import EmployeeView from "./EmployeeView.jsx";
 // import {
 //   getAuth,
 //   signInWithEmailAndPassword,
@@ -31,19 +38,6 @@
 // const SCOPES = "https://www.googleapis.com/auth/calendar.events";
 
 // // Цвета Google Calendar
-// // const GOOGLE_COLORS = [
-// //   { id: 1, name: "Jasnoniebieski", hex: "#a4bdfc" },
-// //   { id: 2, name: "Jasnozielony", hex: "#7ae7bf" },
-// //   { id: 3, name: "Fioletowy", hex: "#dbadff" },
-// //   { id: 4, name: "Jasnoczerwony", hex: "#ff887c" },
-// //   { id: 5, name: "Żółty", hex: "#fbd75b" },
-// //   { id: 6, name: "Pomarańczowy", hex: "#ffb878" },
-// //   { id: 7, name: "Błękitny", hex: "#46d6db" },
-// //   { id: 8, name: "Szary", hex: "#e1e1e1" },
-// //   { id: 9, name: "Niebieski", hex: "#5484ed" },
-// //   { id: 10, name: "Ciemnozielony", hex: "#51b749" },
-// //   { id: 11, name: "Czerwony", hex: "#dc2127" },
-// // ];
 // const GOOGLE_COLORS = [
 //   { id: 1, name: "Lavender", hex: "#a4bdfc" },
 //   { id: 2, name: "Sage", hex: "#7ae7bf" },
@@ -96,19 +90,7 @@
 //       onLogin(userCredential.user);
 //     } catch (error) {
 //       console.error("Ошибка входа:", error);
-
-//       if (
-//         error.code === "auth/user-not-found" ||
-//         error.code === "auth/wrong-password"
-//       ) {
-//         setError("Неверный email или пароль");
-//       } else if (error.code === "auth/invalid-email") {
-//         setError("Неверный формат email");
-//       } else if (error.code === "auth/too-many-requests") {
-//         setError("Слишком много попыток. Попробуйте позже");
-//       } else {
-//         setError(error.message || "Ошибка входа. Проверьте данные");
-//       }
+//       setError(error.message || "Ошибка входа. Проверьте данные");
 //     } finally {
 //       setLoading(false);
 //     }
@@ -133,7 +115,7 @@
 //               <input
 //                 type="email"
 //                 className="login-input"
-//                 placeholder="JetZone24"
+//                 placeholder="admin@jetzone24.com"
 //                 value={email}
 //                 onChange={(e) => setEmail(e.target.value)}
 //                 required
@@ -146,7 +128,7 @@
 //             <label className="login-label">Hasło</label>
 //             <div className="login-input-wrapper">
 //               <span className="login-input-icon">
-//                 <i className="fa-solid fa-shield-halved"></i>
+//                 <i className="fa-solid fa-shield-halved"></i>{" "}
 //               </span>
 //               <input
 //                 type="password"
@@ -174,14 +156,16 @@
 //                 Logowanie...
 //               </>
 //             ) : (
-//               "Zalogować się"
+//               "Zaloguj się"
 //             )}
 //           </button>
 //         </form>
 
 //         <div className="login-footer">
 //           <p>Tylko dla administratorów</p>
-//           <p className="login-hint">Użyj firmowych danych logowania</p>
+//           <div className="employee-link">
+//             <Link to="/employee">➔ Panel pracownika</Link>
+//           </div>
 //         </div>
 //       </div>
 //     </div>
@@ -224,7 +208,134 @@
 //   return diff / 60;
 // };
 
-// export default function App() {
+// // ============= НОВЫЙ КОМПОНЕНТ ДЛЯ ПРИНЯТИЯ/ОТКЛОНЕНИЯ ЗАЯВОК =============
+// const PendingRequestsModal = ({
+//   show,
+//   onClose,
+//   pendingEvents,
+//   users,
+//   onAccept,
+//   onReject,
+// }) => {
+//   if (!show) return null;
+
+//   return (
+//     <div className="modal-overlay">
+//       <div className="modal requests-modal">
+//         <div className="modal-header">
+//           <h3 className="modal-title">Zgłoszenia dostępności od pracowników</h3>
+//           <button className="modal-close" onClick={onClose}>
+//             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+//               <path
+//                 d="M15 5L5 15M5 5L15 15"
+//                 stroke="currentColor"
+//                 strokeWidth="1.5"
+//                 strokeLinecap="round"
+//               />
+//             </svg>
+//           </button>
+//         </div>
+
+//         <div className="modal-content">
+//           {pendingEvents.length === 0 ? (
+//             <div className="empty-state">
+//               <svg
+//                 width="48"
+//                 height="48"
+//                 viewBox="0 0 24 24"
+//                 fill="none"
+//                 stroke="currentColor"
+//               >
+//                 <path
+//                   d="M12 8V12L15 15M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z"
+//                   strokeWidth="1.5"
+//                 />
+//               </svg>
+//               <p>Brak oczekujących zgłoszeń</p>
+//               <span>Pracownicy nie dodali jeszcze żadnych dostępności</span>
+//             </div>
+//           ) : (
+//             <div className="requests-list">
+//               {pendingEvents.map((event) => {
+//                 const user = users.find((u) => u.id === event.userId);
+//                 if (!user) return null;
+
+//                 return (
+//                   <div
+//                     key={event.id}
+//                     className="request-card"
+//                     style={{ borderLeftColor: user.color }}
+//                   >
+//                     <div className="request-header">
+//                       <div className="request-user">
+//                         <div
+//                           className="request-user-avatar"
+//                           style={{ backgroundColor: user.color }}
+//                         >
+//                           {user.name.charAt(0)}
+//                         </div>
+//                         <div className="request-user-info">
+//                           <div className="request-user-name">{user.name}</div>
+//                           <div className="request-user-email">{user.email}</div>
+//                         </div>
+//                       </div>
+//                       <div className="request-status">
+//                         <span className="status-badge pending">Oczekuje</span>
+//                       </div>
+//                     </div>
+
+//                     <div className="request-details">
+//                       <div className="request-detail">
+//                         <span className="detail-label">Data:</span>
+//                         <span className="detail-value">
+//                           {new Date(event.date).toLocaleDateString("pl-PL")}
+//                         </span>
+//                       </div>
+//                       <div className="request-detail">
+//                         <span className="detail-label">Godziny:</span>
+//                         <span className="detail-value">
+//                           {event.startTime} - {event.endTime}
+//                         </span>
+//                       </div>
+//                       <div className="request-detail">
+//                         <span className="detail-label">Rodzaj:</span>
+//                         <span className="detail-value">{event.title}</span>
+//                       </div>
+//                     </div>
+
+//                     <div className="request-actions">
+//                       <button
+//                         className="btn btn-success btn-small"
+//                         onClick={() => onAccept(event)}
+//                       >
+//                         ✅ Akceptuj
+//                       </button>
+//                       <button
+//                         className="btn btn-danger btn-small"
+//                         onClick={() => onReject(event.id)}
+//                       >
+//                         ❌ Odrzuć
+//                       </button>
+//                     </div>
+//                   </div>
+//                 );
+//               })}
+//             </div>
+//           )}
+//         </div>
+
+//         <div className="modal-footer">
+//           <button className="btn btn-secondary" onClick={onClose}>
+//             Zamknij
+//           </button>
+//         </div>
+//       </div>
+//     </div>
+//   );
+// };
+
+// // ============= ГЛАВНЫЙ КОМПОНЕНТ АДМИНА =============
+// function AdminApp() {
 //   const [user, setUser] = useState(null);
 //   const [loading, setLoading] = useState(true);
 //   const [isAuthorized, setIsAuthorized] = useState(false);
@@ -237,6 +348,7 @@
 //   const [showStatsModal, setShowStatsModal] = useState(false);
 //   const [showMonthlyStatsModal, setShowMonthlyStatsModal] = useState(false);
 //   const [showBulkModal, setShowBulkModal] = useState(false);
+//   const [showRequestsModal, setShowRequestsModal] = useState(false); // НОВОЕ
 //   const [authWindow, setAuthWindow] = useState(null);
 //   const [bulkPublishing, setBulkPublishing] = useState(false);
 //   const [bulkMode, setBulkMode] = useState(false);
@@ -620,6 +732,53 @@
 //     }
 //   };
 
+//   // ============= НОВЫЕ ФУНКЦИИ ДЛЯ ПРИНЯТИЯ/ОТКЛОНЕНИЯ =============
+//   const handleAcceptRequest = async (event) => {
+//     const user = users.find((u) => u.id === event.userId);
+//     if (!user) return;
+
+//     let googleEventId = null;
+//     if (isAuthorized) {
+//       googleEventId = await createGoogleCalendarEvent(event, user);
+//     }
+
+//     const newEvent = {
+//       ...event,
+//       googleEventId,
+//       createdAt: new Date().toISOString(),
+//       isPending: false,
+//       acceptedBy: user.email,
+//       acceptedAt: new Date().toISOString(),
+//     };
+
+//     const savedEventId = await saveEventToFirebase(newEvent);
+//     newEvent.id = savedEventId;
+
+//     setEvents((prev) => ({
+//       ...prev,
+//       [savedEventId]: newEvent,
+//     }));
+
+//     // Удаляем из ожидающих
+//     const newPendingEvents = pendingEvents.filter((e) => e.id !== event.id);
+//     savePendingEvents(newPendingEvents);
+
+//     alert(
+//       `✅ Zaakceptowano dostępność ${user.name} na dzień ${new Date(
+//         event.date
+//       ).toLocaleDateString("pl-PL")}`
+//     );
+//   };
+
+//   const handleRejectRequest = (eventId) => {
+//     if (!window.confirm("Czy na pewno chcesz odrzucić to zgłoszenie?")) return;
+
+//     const newPendingEvents = pendingEvents.filter((e) => e.id !== eventId);
+//     savePendingEvents(newPendingEvents);
+
+//     alert(`❌ Zgłoszenie zostało odrzucone`);
+//   };
+
 //   const publishBulkEvents = async () => {
 //     if (bulkForm.selectedEvents.length === 0) {
 //       alert("Выберите события для публикации");
@@ -652,6 +811,8 @@
 //           googleEventId,
 //           createdAt: new Date().toISOString(),
 //           isPending: false,
+//           acceptedBy: user.email,
+//           acceptedAt: new Date().toISOString(),
 //         });
 //         publishedEvents.push({ ...event, googleEventId, id: savedEventId });
 //         successCount++;
@@ -720,7 +881,6 @@
 
 //       const toast = document.createElement("div");
 //       toast.className = "copy-toast success";
-//       // toast.innerHTML = `✅ Смена добавлена в список ожидания на ${targetDate}`;
 //       document.body.appendChild(toast);
 
 //       setTimeout(() => {
@@ -745,7 +905,6 @@
 
 //         const toast = document.createElement("div");
 //         toast.className = "copy-toast success";
-//         // toast.innerHTML = `✅ Смена опубликована на ${targetDate}`;
 //         document.body.appendChild(toast);
 
 //         setTimeout(() => {
@@ -973,7 +1132,107 @@
 //       });
 //     }
 //   };
+//   // Нужно добавить эти состояния в начало компонента (после других useState):
+//   const [selectedDateEvents, setSelectedDateEvents] = useState([]);
+//   const [showEventsListModal, setShowEventsListModal] = useState(false);
+//   // Модалка для отображения нескольких событий на один день
+//   const EventsListModal = ({ show, onClose, events, onEditEvent, users }) => {
+//     if (!show) return null;
 
+//     return (
+//       <div className="modal-overlay">
+//         <div className="modal events-list-modal">
+//           <div className="modal-header">
+//             <h3 className="modal-title">
+//               Wydarzenia dnia{" "}
+//               {events[0]?.date
+//                 ? new Date(events[0].date).toLocaleDateString("pl-PL")
+//                 : ""}
+//             </h3>
+//             <button className="modal-close" onClick={onClose}>
+//               <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+//                 <path
+//                   d="M15 5L5 15M5 5L15 15"
+//                   stroke="currentColor"
+//                   strokeWidth="1.5"
+//                   strokeLinecap="round"
+//                 />
+//               </svg>
+//             </button>
+//           </div>
+
+//           <div className="modal-content">
+//             <div className="events-list">
+//               {events.map((event) => {
+//                 const user = users.find((u) => u.id === event.userId);
+//                 return (
+//                   <div
+//                     key={event.id}
+//                     className={`event-list-item ${
+//                       event.isPending ? "pending" : ""
+//                     }`}
+//                     onClick={() => {
+//                       onEditEvent(event, event.isPending);
+//                       onClose();
+//                     }}
+//                     style={{ borderLeftColor: user?.color }}
+//                   >
+//                     <div
+//                       className="event-item-color"
+//                       style={{ backgroundColor: user?.color }}
+//                     />
+//                     <div className="event-item-info">
+//                       <div className="event-item-user">
+//                         <span className="event-item-name">
+//                           {user?.name || "Nieznany"}
+//                         </span>
+//                         {event.isPending && (
+//                           <span className="event-item-badge">⏳ Oczekuje</span>
+//                         )}
+//                       </div>
+//                       <div className="event-item-details">
+//                         <span className="event-item-time">
+//                           {event.startTime} - {event.endTime}
+//                         </span>
+//                         <span className="event-item-title">{event.title}</span>
+//                       </div>
+//                     </div>
+//                     <div className="event-item-arrow">→</div>
+//                   </div>
+//                 );
+//               })}
+//             </div>
+
+//             <button
+//               className="btn btn-primary add-event-btn"
+//               onClick={() => {
+//                 setEventForm({
+//                   id: null,
+//                   title: "Recepcja",
+//                   date: events[0]?.date || formatDateToYMD(new Date()),
+//                   startTime: "13:00",
+//                   endTime: "20:00",
+//                   userIds: [],
+//                   sendEmail: true,
+//                   isPending: false,
+//                 });
+//                 setShowModal(true);
+//                 onClose();
+//               }}
+//             >
+//               + Dodaj nową zmianę
+//             </button>
+//           </div>
+
+//           <div className="modal-footer">
+//             <button className="btn btn-secondary" onClick={onClose}>
+//               Zamknij
+//             </button>
+//           </div>
+//         </div>
+//       </div>
+//     );
+//   };
 //   const handleDateClick = (date) => {
 //     const dateStr = formatDateToYMD(date);
 //     setSelectedDate(dateStr);
@@ -989,6 +1248,7 @@
 //     ];
 
 //     if (allEventsOnDate.length === 0) {
+//       // Нет событий - создаем новое
 //       setEventForm({
 //         id: null,
 //         title: "Recepcja",
@@ -1000,9 +1260,14 @@
 //         isPending: false,
 //       });
 //       setShowModal(true);
-//     } else {
+//     } else if (allEventsOnDate.length === 1) {
+//       // Одно событие - редактируем его
 //       const firstEvent = allEventsOnDate[0];
 //       handleEditEvent(firstEvent, firstEvent.isPending);
+//     } else {
+//       // Несколько событий - показываем список для выбора
+//       setSelectedDateEvents(allEventsOnDate);
+//       setShowEventsListModal(true);
 //     }
 //   };
 
@@ -1188,56 +1453,64 @@
 
 //           {hasEvent && (
 //             <div className="shift-square">
-//               {dayEvents.map((event) => (
-//                 <div
-//                   key={event.id}
-//                   className={`shift-item ${event.isPending ? "pending" : ""} ${
-//                     isCopyMode ? "copyable" : ""
-//                   }`}
-//                   style={{
-//                     backgroundColor: event.user?.color || "#4A90E2",
-//                     opacity: event.isPending ? 0.55 : 1,
-//                     borderLeft: event.isPending
-//                       ? "3px solid rgba(0,0,0,0.2)"
-//                       : "none",
-//                     cursor: isCopyMode ? "copy" : "pointer",
-//                   }}
-//                   onClick={(e) => {
-//                     e.stopPropagation();
+//               {/* ИСПРАВЛЕНО: Теперь все события отображаются в столбик */}
+//               <div className="shift-events-list">
+//                 {dayEvents.map((event) => (
+//                   <div
+//                     key={event.id}
+//                     className={`shift-item ${
+//                       event.isPending ? "pending" : ""
+//                     } ${isCopyMode ? "copyable" : ""}`}
+//                     style={{
+//                       backgroundColor: event.user?.color || "#4A90E2",
+//                       opacity: event.isPending ? 0.55 : 1,
+//                       borderLeft: event.isPending
+//                         ? "3px solid rgba(0,0,0,0.2)"
+//                         : "none",
+//                       cursor: isCopyMode ? "copy" : "pointer",
+//                     }}
+//                     onClick={(e) => {
+//                       e.stopPropagation();
 
-//                     if (e.ctrlKey || e.shiftKey) {
-//                       handleCopyEvent(event, event.isPending, dateStr);
-//                     } else if (isCopyMode) {
-//                       handleCopyEvent(event, event.isPending, dateStr);
-//                     } else {
-//                       handleShiftClick(e, event, event.isPending);
+//                       if (e.ctrlKey || e.shiftKey) {
+//                         handleCopyEvent(event, event.isPending, dateStr);
+//                       } else if (isCopyMode) {
+//                         handleCopyEvent(event, event.isPending, dateStr);
+//                       } else {
+//                         handleShiftClick(e, event, event.isPending);
+//                       }
+//                     }}
+//                     onMouseEnter={() => {
+//                       setHoveredEvent({
+//                         event,
+//                         isPending: event.isPending,
+//                         date: dateStr,
+//                       });
+//                     }}
+//                     onMouseLeave={() => {
+//                       setHoveredEvent(null);
+//                     }}
+//                     title={
+//                       isCopyMode
+//                         ? "Нажмите, чтобы скопировать"
+//                         : `${event.user?.name}: ${event.title} (${event.startTime})`
 //                     }
-//                   }}
-//                   onMouseEnter={() => {
-//                     setHoveredEvent({
-//                       event,
-//                       isPending: event.isPending,
-//                       date: dateStr,
-//                     });
-//                   }}
-//                   onMouseLeave={() => {
-//                     setHoveredEvent(null);
-//                   }}
-//                   title={
-//                     isCopyMode ? "Нажмите, чтобы скопировать" : event.title
-//                   }
-//                 >
-//                   <span className="shift-initial">
-//                     {event.user?.name?.charAt(0) || "?"}
-//                   </span>
-//                   <span className="shift-time">{event.startTime}</span>
-//                   {event.isPending && (
-//                     <span className="shift-pending-badge">⏳</span>
-//                   )}
-//                 </div>
-//               ))}
-//               {dayEvents.length > 4 && (
-//                 <div className="shift-more">+{dayEvents.length - 4}</div>
+//                   >
+//                     <span className="shift-initial">
+//                       {event.user?.name?.charAt(0) || "?"}
+//                     </span>
+//                     <span className="shift-time">{event.startTime}</span>
+//                     <span className="shift-name">
+//                       {event.user?.name?.split(" ")[0]}
+//                     </span>
+//                     {event.isPending && (
+//                       <span className="shift-pending-badge">⏳</span>
+//                     )}
+//                   </div>
+//                 ))}
+//               </div>
+//               {dayEvents.length > 3 && (
+//                 <div className="shift-more">+{dayEvents.length - 3} więcej</div>
 //               )}
 //             </div>
 //           )}
@@ -1301,6 +1574,34 @@
 //         </div>
 
 //         <div className="header-actions">
+//           {/* НОВАЯ КНОПКА ДЛЯ ПРОСМОТРА ЗАЯВОК */}
+//           <button
+//             className={`btn-icon ${
+//               pendingEvents.length > 0 ? "has-badge pulse" : ""
+//             }`}
+//             onClick={() => setShowRequestsModal(true)}
+//             disabled={pendingEvents.length === 0}
+//             title="Zgłoszenia dostępności"
+//           >
+//             {pendingEvents.length > 0 && (
+//               <span className="btn-icon-badge">{pendingEvents.length}</span>
+//             )}
+//             <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+//               <path
+//                 d="M5 4H15C16.1046 4 17 4.89543 17 6V14C17 15.1046 16.1046 16 15 16H5C3.89543 16 3 15.1046 3 14V6C3 4.89543 3.89543 4 5 4Z"
+//                 stroke="currentColor"
+//                 strokeWidth="1.5"
+//               />
+//               <path
+//                 d="M7 9H13M7 12H11"
+//                 stroke="currentColor"
+//                 strokeWidth="1.5"
+//                 strokeLinecap="round"
+//               />
+//             </svg>
+//             <span>Zgłoszenia</span>
+//           </button>
+
 //           <div className="bulk-mode-toggle">
 //             <span className="toggle-label">Masowa publikacja</span>
 //             <button
@@ -1465,6 +1766,16 @@
 //         </div>
 //         <div className="calendar-grid">{renderCalendar()}</div>
 //       </div>
+
+//       {/* НОВАЯ МОДАЛКА ДЛЯ ПРИНЯТИЯ ЗАЯВОК */}
+//       <PendingRequestsModal
+//         show={showRequestsModal}
+//         onClose={() => setShowRequestsModal(false)}
+//         pendingEvents={pendingEvents}
+//         users={users}
+//         onAccept={handleAcceptRequest}
+//         onReject={handleRejectRequest}
+//       />
 
 //       {/* МОДАЛКА МЕСЯЧНОЙ СТАТИСТИКИ */}
 //       {showMonthlyStatsModal && (
@@ -2374,6 +2685,19 @@
 //     </div>
 //   );
 // }
+
+// // ============= ГЛАВНЫЙ КОМПОНЕНТ С МАРШРУТИЗАЦИЕЙ =============
+// export default function App() {
+//   return (
+//     <Router>
+//       <Routes>
+//         <Route path="/" element={<AdminApp />} />
+//         <Route path="/employee" element={<EmployeeView />} />
+//       </Routes>
+//     </Router>
+//   );
+// }
+
 import { useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import { initializeApp } from "firebase/app";
@@ -2384,6 +2708,7 @@ import {
   onValue,
   remove,
   update,
+  get, // ДОБАВИТЬ
 } from "firebase/database";
 import EmployeeView from "./EmployeeView.jsx";
 import {
@@ -2951,6 +3276,7 @@ function AdminApp() {
     setIsLoading(true);
     await loadUsersFromFirebase();
     await loadEventsFromFirebase();
+    await loadPendingEventsFromFirebase();
     const savedPending = localStorage.getItem("pendingEvents");
     if (savedPending) {
       try {
@@ -2980,7 +3306,28 @@ function AdminApp() {
       }
     });
   };
-
+  const loadPendingEventsFromFirebase = () => {
+    const pendingRef = ref(db, "pendingEvents");
+    onValue(
+      pendingRef,
+      (snapshot) => {
+        const data = snapshot.val();
+        console.log("Загружены ожидающие события из Firebase:", data);
+        if (data) {
+          const pendingArray = Object.values(data);
+          setPendingEvents(pendingArray);
+          // Также сохраняем в localStorage для обратной совместимости
+          localStorage.setItem("pendingEvents", JSON.stringify(pendingArray));
+        } else {
+          setPendingEvents([]);
+          localStorage.removeItem("pendingEvents");
+        }
+      },
+      (error) => {
+        console.error("Ошибка загрузки ожидающих событий:", error);
+      }
+    );
+  };
   const loadEventsFromFirebase = () => {
     const eventsRef = ref(db, "calendarEvents");
     onValue(eventsRef, (snapshot) => {
@@ -2993,9 +3340,38 @@ function AdminApp() {
     });
   };
 
-  const savePendingEvents = (newPendingEvents) => {
+  const savePendingEvents = async (newPendingEvents) => {
+    // Обновляем состояние
     setPendingEvents(newPendingEvents);
+
+    // Сохраняем в localStorage
     localStorage.setItem("pendingEvents", JSON.stringify(newPendingEvents));
+
+    // Сохраняем в Firebase
+    try {
+      // Сначала очистим все старые записи? Нет, лучше обновлять каждую
+      for (const event of newPendingEvents) {
+        const pendingRef = ref(db, `pendingEvents/${event.id}`);
+        await set(pendingRef, event);
+      }
+
+      // Находим события, которые были удалены
+      // Получаем текущие события из Firebase
+      const snapshot = await get(ref(db, "pendingEvents"));
+      const firebaseEvents = snapshot.val() || {};
+
+      // Удаляем события, которых нет в новом списке
+      for (const firebaseId of Object.keys(firebaseEvents)) {
+        if (!newPendingEvents.find((e) => e.id === firebaseId)) {
+          const pendingRef = ref(db, `pendingEvents/${firebaseId}`);
+          await remove(pendingRef);
+        }
+      }
+
+      console.log("Ожидающие события сохранены в Firebase");
+    } catch (error) {
+      console.error("Ошибка сохранения в Firebase:", error);
+    }
   };
 
   const loginWithGoogle = () => {
@@ -3135,9 +3511,9 @@ function AdminApp() {
       [savedEventId]: newEvent,
     }));
 
-    // Удаляем из ожидающих
+    // Удаляем из ожидающих (функция сохранит в Firebase)
     const newPendingEvents = pendingEvents.filter((e) => e.id !== event.id);
-    savePendingEvents(newPendingEvents);
+    await savePendingEvents(newPendingEvents);
 
     alert(
       `✅ Zaakceptowano dostępność ${user.name} na dzień ${new Date(
@@ -3146,11 +3522,14 @@ function AdminApp() {
     );
   };
 
-  const handleRejectRequest = (eventId) => {
+  const handleRejectRequest = async (eventId) => {
     if (!window.confirm("Czy na pewno chcesz odrzucić to zgłoszenie?")) return;
 
+    // Удаляем из состояния
     const newPendingEvents = pendingEvents.filter((e) => e.id !== eventId);
-    savePendingEvents(newPendingEvents);
+
+    // Сохраняем изменения (функция уже сохраняет в Firebase)
+    await savePendingEvents(newPendingEvents);
 
     alert(`❌ Zgłoszenie zostało odrzucone`);
   };
