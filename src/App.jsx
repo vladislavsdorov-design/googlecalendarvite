@@ -8,6 +8,7 @@
 //   onValue,
 //   remove,
 //   update,
+//   get, // ДОБАВИТЬ
 // } from "firebase/database";
 // import EmployeeView from "./EmployeeView.jsx";
 // import {
@@ -575,6 +576,7 @@
 //     setIsLoading(true);
 //     await loadUsersFromFirebase();
 //     await loadEventsFromFirebase();
+//     await loadPendingEventsFromFirebase();
 //     const savedPending = localStorage.getItem("pendingEvents");
 //     if (savedPending) {
 //       try {
@@ -604,7 +606,28 @@
 //       }
 //     });
 //   };
-
+//   const loadPendingEventsFromFirebase = () => {
+//     const pendingRef = ref(db, "pendingEvents");
+//     onValue(
+//       pendingRef,
+//       (snapshot) => {
+//         const data = snapshot.val();
+//         console.log("Загружены ожидающие события из Firebase:", data);
+//         if (data) {
+//           const pendingArray = Object.values(data);
+//           setPendingEvents(pendingArray);
+//           // Также сохраняем в localStorage для обратной совместимости
+//           localStorage.setItem("pendingEvents", JSON.stringify(pendingArray));
+//         } else {
+//           setPendingEvents([]);
+//           localStorage.removeItem("pendingEvents");
+//         }
+//       },
+//       (error) => {
+//         console.error("Ошибка загрузки ожидающих событий:", error);
+//       }
+//     );
+//   };
 //   const loadEventsFromFirebase = () => {
 //     const eventsRef = ref(db, "calendarEvents");
 //     onValue(eventsRef, (snapshot) => {
@@ -617,9 +640,38 @@
 //     });
 //   };
 
-//   const savePendingEvents = (newPendingEvents) => {
+//   const savePendingEvents = async (newPendingEvents) => {
+//     // Обновляем состояние
 //     setPendingEvents(newPendingEvents);
+
+//     // Сохраняем в localStorage
 //     localStorage.setItem("pendingEvents", JSON.stringify(newPendingEvents));
+
+//     // Сохраняем в Firebase
+//     try {
+//       // Сначала очистим все старые записи? Нет, лучше обновлять каждую
+//       for (const event of newPendingEvents) {
+//         const pendingRef = ref(db, `pendingEvents/${event.id}`);
+//         await set(pendingRef, event);
+//       }
+
+//       // Находим события, которые были удалены
+//       // Получаем текущие события из Firebase
+//       const snapshot = await get(ref(db, "pendingEvents"));
+//       const firebaseEvents = snapshot.val() || {};
+
+//       // Удаляем события, которых нет в новом списке
+//       for (const firebaseId of Object.keys(firebaseEvents)) {
+//         if (!newPendingEvents.find((e) => e.id === firebaseId)) {
+//           const pendingRef = ref(db, `pendingEvents/${firebaseId}`);
+//           await remove(pendingRef);
+//         }
+//       }
+
+//       console.log("Ожидающие события сохранены в Firebase");
+//     } catch (error) {
+//       console.error("Ошибка сохранения в Firebase:", error);
+//     }
 //   };
 
 //   const loginWithGoogle = () => {
@@ -759,9 +811,9 @@
 //       [savedEventId]: newEvent,
 //     }));
 
-//     // Удаляем из ожидающих
+//     // Удаляем из ожидающих (функция сохранит в Firebase)
 //     const newPendingEvents = pendingEvents.filter((e) => e.id !== event.id);
-//     savePendingEvents(newPendingEvents);
+//     await savePendingEvents(newPendingEvents);
 
 //     alert(
 //       `✅ Zaakceptowano dostępność ${user.name} na dzień ${new Date(
@@ -770,11 +822,14 @@
 //     );
 //   };
 
-//   const handleRejectRequest = (eventId) => {
+//   const handleRejectRequest = async (eventId) => {
 //     if (!window.confirm("Czy na pewno chcesz odrzucić to zgłoszenie?")) return;
 
+//     // Удаляем из состояния
 //     const newPendingEvents = pendingEvents.filter((e) => e.id !== eventId);
-//     savePendingEvents(newPendingEvents);
+
+//     // Сохраняем изменения (функция уже сохраняет в Firebase)
+//     await savePendingEvents(newPendingEvents);
 
 //     alert(`❌ Zgłoszenie zostało odrzucone`);
 //   };
@@ -2697,7 +2752,6 @@
 //     </Router>
 //   );
 // }
-
 import { useEffect, useState } from "react";
 import { BrowserRouter as Router, Routes, Route, Link } from "react-router-dom";
 import { initializeApp } from "firebase/app";
@@ -2708,7 +2762,7 @@ import {
   onValue,
   remove,
   update,
-  get, // ДОБАВИТЬ
+  get,
 } from "firebase/database";
 import EmployeeView from "./EmployeeView.jsx";
 import {
@@ -2873,6 +2927,203 @@ const LoginScreen = ({ onLogin }) => {
   );
 };
 
+// ============= НОВЫЙ КОМПОНЕНТ НАСТРОЙКИ ДОСТУПНОСТИ =============
+const AvailabilitySettings = ({ show, onClose, settings, onSave, user }) => {
+  const [enabled, setEnabled] = useState(settings?.enabled || false);
+  const [startDay, setStartDay] = useState(settings?.startDay || 1);
+  const [endDay, setEndDay] = useState(settings?.endDay || 31);
+  const [selectedMonth, setSelectedMonth] = useState(
+    settings?.month || new Date().getMonth()
+  );
+  const [selectedYear, setSelectedYear] = useState(
+    settings?.year || new Date().getFullYear()
+  );
+  const [saving, setSaving] = useState(false);
+
+  if (!show) return null;
+
+  const months = [
+    "Styczeń",
+    "Luty",
+    "Marzec",
+    "Kwiecień",
+    "Maj",
+    "Czerwiec",
+    "Lipiec",
+    "Sierpień",
+    "Wrzesień",
+    "Październik",
+    "Listopad",
+    "Grudzień",
+  ];
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await onSave({
+        enabled,
+        startDay: parseInt(startDay),
+        endDay: parseInt(endDay),
+        month: selectedMonth,
+        year: selectedYear,
+        monthKey: `${selectedYear}-${String(selectedMonth + 1).padStart(
+          2,
+          "0"
+        )}`,
+      });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal availability-modal">
+        <div className="modal-header">
+          <h3 className="modal-title">
+            <svg
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              style={{ marginRight: "8px" }}
+            >
+              <path
+                d="M8 2v3M16 2v3M3 7h18M5 5h14a2 2 0 012 2v12a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2z"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
+              <path
+                d="M12 12v4M10 14h4"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
+            </svg>
+            Ustawienia dostępności pracowników
+          </h3>
+          <button className="modal-close" onClick={onClose}>
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path
+                d="M15 5L5 15M5 5L15 15"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
+            </svg>
+          </button>
+        </div>
+
+        <div className="modal-content">
+          <div className="availability-section">
+            <div className="availability-toggle">
+              <label className="toggle-container">
+                <span className="toggle-label">
+                  Włącz możliwość dodawania dostępności przez pracowników
+                </span>
+                <div className="toggle-switch-large">
+                  <button
+                    className={`toggle-switch ${enabled ? "active" : ""}`}
+                    onClick={() => setEnabled(!enabled)}
+                  >
+                    <span className="toggle-handle"></span>
+                  </button>
+                </div>
+              </label>
+            </div>
+
+            {enabled && (
+              <div className="availability-dates">
+                <div className="form-section">
+                  <label className="form-label">Wybierz miesiąc</label>
+                  <div className="month-selector">
+                    <select
+                      className="form-select month-select"
+                      value={selectedMonth}
+                      onChange={(e) =>
+                        setSelectedMonth(parseInt(e.target.value))
+                      }
+                    >
+                      {months.map((month, index) => (
+                        <option key={index} value={index}>
+                          {month}
+                        </option>
+                      ))}
+                    </select>
+                    <input
+                      type="number"
+                      className="form-input year-input"
+                      value={selectedYear}
+                      onChange={(e) =>
+                        setSelectedYear(parseInt(e.target.value))
+                      }
+                      min="2024"
+                      max="2030"
+                    />
+                  </div>
+                </div>
+
+                <div className="form-section">
+                  <label className="form-label">Zakres dni w miesiącu</label>
+                  <div className="date-range-inputs">
+                    <div className="date-input-group">
+                      <span className="date-input-label">Od dnia</span>
+                      <input
+                        type="number"
+                        min="1"
+                        max="31"
+                        className="form-input date-input"
+                        value={startDay}
+                        onChange={(e) => setStartDay(e.target.value)}
+                      />
+                    </div>
+                    <div className="date-input-group">
+                      <span className="date-input-label">Do dnia</span>
+                      <input
+                        type="number"
+                        min="1"
+                        max="31"
+                        className="form-input date-input"
+                        value={endDay}
+                        onChange={(e) => setEndDay(e.target.value)}
+                      />
+                    </div>
+                  </div>
+                  <p className="input-hint">
+                    Pracownicy będą mogli dodawać dostępność od {startDay} do{" "}
+                    {endDay} dnia miesiąca {months[selectedMonth]}{" "}
+                    {selectedYear}
+                  </p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="modal-footer">
+          <button className="btn btn-secondary" onClick={onClose}>
+            Anuluj
+          </button>
+          <button
+            className="btn btn-primary"
+            onClick={handleSave}
+            disabled={saving}
+          >
+            {saving ? (
+              <>
+                <span className="spinner-small" />
+                Zapisywanie...
+              </>
+            ) : (
+              "Zapisz ustawienia"
+            )}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ============= КОМПОНЕНТ ВЫХОДА =============
 const LogoutButton = ({ onLogout }) => {
   const handleLogout = async () => {
@@ -2909,7 +3160,7 @@ const calculateHoursDiff = (startTime, endTime) => {
   return diff / 60;
 };
 
-// ============= НОВЫЙ КОМПОНЕНТ ДЛЯ ПРИНЯТИЯ/ОТКЛОНЕНИЯ ЗАЯВОК =============
+// ============= КОМПОНЕНТ ДЛЯ ПРИНЯТИЯ/ОТКЛОНЕНИЯ ЗАЯВОК =============
 const PendingRequestsModal = ({
   show,
   onClose,
@@ -3035,6 +3286,95 @@ const PendingRequestsModal = ({
   );
 };
 
+// ============= МОДАЛКА ДЛЯ ОТОБРАЖЕНИЯ НЕСКОЛЬКИХ СОБЫТИЙ =============
+const EventsListModal = ({ show, onClose, events, onEditEvent, users }) => {
+  if (!show) return null;
+
+  return (
+    <div className="modal-overlay">
+      <div className="modal events-list-modal">
+        <div className="modal-header">
+          <h3 className="modal-title">
+            Wydarzenia dnia{" "}
+            {events[0]?.date
+              ? new Date(events[0].date).toLocaleDateString("pl-PL")
+              : ""}
+          </h3>
+          <button className="modal-close" onClick={onClose}>
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path
+                d="M15 5L5 15M5 5L15 15"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
+            </svg>
+          </button>
+        </div>
+
+        <div className="modal-content">
+          <div className="events-list">
+            {events.map((event) => {
+              const user = users.find((u) => u.id === event.userId);
+              return (
+                <div
+                  key={event.id}
+                  className={`event-list-item ${
+                    event.isPending ? "pending" : ""
+                  }`}
+                  onClick={() => {
+                    onEditEvent(event, event.isPending);
+                    onClose();
+                  }}
+                  style={{ borderLeftColor: user?.color }}
+                >
+                  <div
+                    className="event-item-color"
+                    style={{ backgroundColor: user?.color }}
+                  />
+                  <div className="event-item-info">
+                    <div className="event-item-user">
+                      <span className="event-item-name">
+                        {user?.name || "Nieznany"}
+                      </span>
+                      {event.isPending && (
+                        <span className="event-item-badge">⏳ Oczekuje</span>
+                      )}
+                    </div>
+                    <div className="event-item-details">
+                      <span className="event-item-time">
+                        {event.startTime} - {event.endTime}
+                      </span>
+                      <span className="event-item-title">{event.title}</span>
+                    </div>
+                  </div>
+                  <div className="event-item-arrow">→</div>
+                </div>
+              );
+            })}
+          </div>
+
+          <button
+            className="btn btn-primary add-event-btn"
+            onClick={() => {
+              // Будет вызвано из родительского компонента
+              onClose();
+            }}
+          >
+            + Dodaj nową zmianę
+          </button>
+        </div>
+
+        <div className="modal-footer">
+          <button className="btn btn-secondary" onClick={onClose}>
+            Zamknij
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+};
+
 // ============= ГЛАВНЫЙ КОМПОНЕНТ АДМИНА =============
 function AdminApp() {
   const [user, setUser] = useState(null);
@@ -3049,7 +3389,9 @@ function AdminApp() {
   const [showStatsModal, setShowStatsModal] = useState(false);
   const [showMonthlyStatsModal, setShowMonthlyStatsModal] = useState(false);
   const [showBulkModal, setShowBulkModal] = useState(false);
-  const [showRequestsModal, setShowRequestsModal] = useState(false); // НОВОЕ
+  const [showRequestsModal, setShowRequestsModal] = useState(false);
+  const [showAvailabilitySettings, setShowAvailabilitySettings] =
+    useState(false);
   const [authWindow, setAuthWindow] = useState(null);
   const [bulkPublishing, setBulkPublishing] = useState(false);
   const [bulkMode, setBulkMode] = useState(false);
@@ -3063,6 +3405,18 @@ function AdminApp() {
   // Состояния для месячной статистики
   const [selectedStatsMonth, setSelectedStatsMonth] = useState(new Date());
   const [monthlyStats, setMonthlyStats] = useState({});
+
+  // Состояния для настроек доступности
+  const [availabilitySettings, setAvailabilitySettings] = useState({
+    enabled: false,
+    startDay: 1,
+    endDay: 31,
+    month: new Date().getMonth(),
+    year: new Date().getFullYear(),
+    monthKey: `${new Date().getFullYear()}-${String(
+      new Date().getMonth() + 1
+    ).padStart(2, "0")}`,
+  });
 
   // Форма создания/редактирования смены
   const [eventForm, setEventForm] = useState({
@@ -3090,6 +3444,8 @@ function AdminApp() {
   const [stats, setStats] = useState({});
   const [selectedDate, setSelectedDate] = useState(null);
   const [hoveredEvent, setHoveredEvent] = useState(null);
+  const [selectedDateEvents, setSelectedDateEvents] = useState([]);
+  const [showEventsListModal, setShowEventsListModal] = useState(false);
 
   // ============= АВТОРИЗАЦИЯ =============
   useEffect(() => {
@@ -3277,6 +3633,7 @@ function AdminApp() {
     await loadUsersFromFirebase();
     await loadEventsFromFirebase();
     await loadPendingEventsFromFirebase();
+    await loadAvailabilitySettings();
     const savedPending = localStorage.getItem("pendingEvents");
     if (savedPending) {
       try {
@@ -3306,6 +3663,7 @@ function AdminApp() {
       }
     });
   };
+
   const loadPendingEventsFromFirebase = () => {
     const pendingRef = ref(db, "pendingEvents");
     onValue(
@@ -3316,7 +3674,6 @@ function AdminApp() {
         if (data) {
           const pendingArray = Object.values(data);
           setPendingEvents(pendingArray);
-          // Также сохраняем в localStorage для обратной совместимости
           localStorage.setItem("pendingEvents", JSON.stringify(pendingArray));
         } else {
           setPendingEvents([]);
@@ -3328,6 +3685,25 @@ function AdminApp() {
       }
     );
   };
+
+  const loadAvailabilitySettings = async () => {
+    const settingsRef = ref(db, "settings/availability");
+    onValue(settingsRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        // Находим настройки для текущего месяца
+        const currentMonthKey = `${new Date().getFullYear()}-${String(
+          new Date().getMonth() + 1
+        ).padStart(2, "0")}`;
+        const currentSettings = data[currentMonthKey];
+
+        if (currentSettings) {
+          setAvailabilitySettings(currentSettings);
+        }
+      }
+    });
+  };
+
   const loadEventsFromFirebase = () => {
     const eventsRef = ref(db, "calendarEvents");
     onValue(eventsRef, (snapshot) => {
@@ -3341,26 +3717,18 @@ function AdminApp() {
   };
 
   const savePendingEvents = async (newPendingEvents) => {
-    // Обновляем состояние
     setPendingEvents(newPendingEvents);
-
-    // Сохраняем в localStorage
     localStorage.setItem("pendingEvents", JSON.stringify(newPendingEvents));
 
-    // Сохраняем в Firebase
     try {
-      // Сначала очистим все старые записи? Нет, лучше обновлять каждую
       for (const event of newPendingEvents) {
         const pendingRef = ref(db, `pendingEvents/${event.id}`);
         await set(pendingRef, event);
       }
 
-      // Находим события, которые были удалены
-      // Получаем текущие события из Firebase
       const snapshot = await get(ref(db, "pendingEvents"));
       const firebaseEvents = snapshot.val() || {};
 
-      // Удаляем события, которых нет в новом списке
       for (const firebaseId of Object.keys(firebaseEvents)) {
         if (!newPendingEvents.find((e) => e.id === firebaseId)) {
           const pendingRef = ref(db, `pendingEvents/${firebaseId}`);
@@ -3371,6 +3739,29 @@ function AdminApp() {
       console.log("Ожидающие события сохранены в Firebase");
     } catch (error) {
       console.error("Ошибка сохранения в Firebase:", error);
+    }
+  };
+
+  const saveAvailabilitySettings = async (settings) => {
+    try {
+      const settingsRef = ref(db, `settings/availability/${settings.monthKey}`);
+      await set(settingsRef, {
+        ...settings,
+        updatedAt: new Date().toISOString(),
+        updatedBy: user?.email,
+      });
+
+      setAvailabilitySettings(settings);
+      setShowAvailabilitySettings(false);
+
+      const toast = document.createElement("div");
+      toast.className = "copy-toast success";
+      toast.textContent = "✅ Ustawienia zostały zapisane";
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    } catch (error) {
+      console.error("Ошибка сохранения настроек:", error);
+      alert("❌ Błąd podczas zapisywania ustawień");
     }
   };
 
@@ -3484,7 +3875,7 @@ function AdminApp() {
     }
   };
 
-  // ============= НОВЫЕ ФУНКЦИИ ДЛЯ ПРИНЯТИЯ/ОТКЛОНЕНИЯ =============
+  // ============= ФУНКЦИИ ДЛЯ ПРИНЯТИЯ/ОТКЛОНЕНИЯ =============
   const handleAcceptRequest = async (event) => {
     const user = users.find((u) => u.id === event.userId);
     if (!user) return;
@@ -3511,7 +3902,6 @@ function AdminApp() {
       [savedEventId]: newEvent,
     }));
 
-    // Удаляем из ожидающих (функция сохранит в Firebase)
     const newPendingEvents = pendingEvents.filter((e) => e.id !== event.id);
     await savePendingEvents(newPendingEvents);
 
@@ -3525,10 +3915,7 @@ function AdminApp() {
   const handleRejectRequest = async (eventId) => {
     if (!window.confirm("Czy na pewno chcesz odrzucić to zgłoszenie?")) return;
 
-    // Удаляем из состояния
     const newPendingEvents = pendingEvents.filter((e) => e.id !== eventId);
-
-    // Сохраняем изменения (функция уже сохраняет в Firebase)
     await savePendingEvents(newPendingEvents);
 
     alert(`❌ Zgłoszenie zostało odrzucone`);
@@ -3887,107 +4274,7 @@ function AdminApp() {
       });
     }
   };
-  // Нужно добавить эти состояния в начало компонента (после других useState):
-  const [selectedDateEvents, setSelectedDateEvents] = useState([]);
-  const [showEventsListModal, setShowEventsListModal] = useState(false);
-  // Модалка для отображения нескольких событий на один день
-  const EventsListModal = ({ show, onClose, events, onEditEvent, users }) => {
-    if (!show) return null;
 
-    return (
-      <div className="modal-overlay">
-        <div className="modal events-list-modal">
-          <div className="modal-header">
-            <h3 className="modal-title">
-              Wydarzenia dnia{" "}
-              {events[0]?.date
-                ? new Date(events[0].date).toLocaleDateString("pl-PL")
-                : ""}
-            </h3>
-            <button className="modal-close" onClick={onClose}>
-              <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
-                <path
-                  d="M15 5L5 15M5 5L15 15"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                />
-              </svg>
-            </button>
-          </div>
-
-          <div className="modal-content">
-            <div className="events-list">
-              {events.map((event) => {
-                const user = users.find((u) => u.id === event.userId);
-                return (
-                  <div
-                    key={event.id}
-                    className={`event-list-item ${
-                      event.isPending ? "pending" : ""
-                    }`}
-                    onClick={() => {
-                      onEditEvent(event, event.isPending);
-                      onClose();
-                    }}
-                    style={{ borderLeftColor: user?.color }}
-                  >
-                    <div
-                      className="event-item-color"
-                      style={{ backgroundColor: user?.color }}
-                    />
-                    <div className="event-item-info">
-                      <div className="event-item-user">
-                        <span className="event-item-name">
-                          {user?.name || "Nieznany"}
-                        </span>
-                        {event.isPending && (
-                          <span className="event-item-badge">⏳ Oczekuje</span>
-                        )}
-                      </div>
-                      <div className="event-item-details">
-                        <span className="event-item-time">
-                          {event.startTime} - {event.endTime}
-                        </span>
-                        <span className="event-item-title">{event.title}</span>
-                      </div>
-                    </div>
-                    <div className="event-item-arrow">→</div>
-                  </div>
-                );
-              })}
-            </div>
-
-            <button
-              className="btn btn-primary add-event-btn"
-              onClick={() => {
-                setEventForm({
-                  id: null,
-                  title: "Recepcja",
-                  date: events[0]?.date || formatDateToYMD(new Date()),
-                  startTime: "13:00",
-                  endTime: "20:00",
-                  userIds: [],
-                  sendEmail: true,
-                  isPending: false,
-                });
-                setShowModal(true);
-                onClose();
-              }}
-            >
-              + Dodaj nową zmianę
-            </button>
-          </div>
-
-          <div className="modal-footer">
-            <button className="btn btn-secondary" onClick={onClose}>
-              Zamknij
-            </button>
-          </div>
-        </div>
-      </div>
-    );
-  };
   const handleDateClick = (date) => {
     const dateStr = formatDateToYMD(date);
     setSelectedDate(dateStr);
@@ -4003,7 +4290,6 @@ function AdminApp() {
     ];
 
     if (allEventsOnDate.length === 0) {
-      // Нет событий - создаем новое
       setEventForm({
         id: null,
         title: "Recepcja",
@@ -4016,11 +4302,9 @@ function AdminApp() {
       });
       setShowModal(true);
     } else if (allEventsOnDate.length === 1) {
-      // Одно событие - редактируем его
       const firstEvent = allEventsOnDate[0];
       handleEditEvent(firstEvent, firstEvent.isPending);
     } else {
-      // Несколько событий - показываем список для выбора
       setSelectedDateEvents(allEventsOnDate);
       setShowEventsListModal(true);
     }
@@ -4208,7 +4492,6 @@ function AdminApp() {
 
           {hasEvent && (
             <div className="shift-square">
-              {/* ИСПРАВЛЕНО: Теперь все события отображаются в столбик */}
               <div className="shift-events-list">
                 {dayEvents.map((event) => (
                   <div
@@ -4329,7 +4612,30 @@ function AdminApp() {
         </div>
 
         <div className="header-actions">
-          {/* НОВАЯ КНОПКА ДЛЯ ПРОСМОТРА ЗАЯВОК */}
+          {/* НОВАЯ КНОПКА НАСТРОЙКИ ДОСТУПНОСТИ */}
+          <button
+            className={`btn-icon availability-btn ${
+              availabilitySettings.enabled ? "active" : ""
+            }`}
+            onClick={() => setShowAvailabilitySettings(true)}
+            title="Ustawienia dostępności"
+          >
+            <svg width="20" height="20" viewBox="0 0 20 20" fill="none">
+              <path
+                d="M10 4V16M4 10H16"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
+            </svg>
+            <span>Dostępność</span>
+            {availabilitySettings.enabled && (
+              <span className="availability-badge">
+                {availabilitySettings.monthKey?.split("-")[1] || "ON"}
+              </span>
+            )}
+          </button>
+
           <button
             className={`btn-icon ${
               pendingEvents.length > 0 ? "has-badge pulse" : ""
@@ -4522,7 +4828,6 @@ function AdminApp() {
         <div className="calendar-grid">{renderCalendar()}</div>
       </div>
 
-      {/* НОВАЯ МОДАЛКА ДЛЯ ПРИНЯТИЯ ЗАЯВОК */}
       <PendingRequestsModal
         show={showRequestsModal}
         onClose={() => setShowRequestsModal(false)}
@@ -4532,7 +4837,23 @@ function AdminApp() {
         onReject={handleRejectRequest}
       />
 
-      {/* МОДАЛКА МЕСЯЧНОЙ СТАТИСТИКИ */}
+      <AvailabilitySettings
+        show={showAvailabilitySettings}
+        onClose={() => setShowAvailabilitySettings(false)}
+        settings={availabilitySettings}
+        onSave={saveAvailabilitySettings}
+        user={user}
+      />
+
+      <EventsListModal
+        show={showEventsListModal}
+        onClose={() => setShowEventsListModal(false)}
+        events={selectedDateEvents}
+        onEditEvent={handleEditEvent}
+        users={users}
+      />
+
+      {/* Остальные модалки (статистика, массовая публикация, пользователи и т.д.) */}
       {showMonthlyStatsModal && (
         <div className="modal-overlay">
           <div className="modal stats-modal monthly-stats-modal">

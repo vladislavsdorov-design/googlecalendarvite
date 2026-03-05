@@ -1927,3 +1927,1240 @@ body {
 .shifts-toggle__checkbox:checked + .shifts-toggle__slider:before {
   transform: translateX(26px);
 }
+/* Стили для блокировки дней */
+.calendar-day.blocked {
+  background-color: #ffebee !important;
+  position: relative;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.calendar-day.blocked::after {
+  content: "🔒";
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  font-size: 10px;
+  opacity: 0.7;
+}
+
+.calendar-day.allowed {
+  background-color: #fff9c4 !important;
+  position: relative;
+}
+
+.calendar-day.allowed::before {
+  content: "✓";
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  font-size: 12px;
+  color: #fbc02d;
+  font-weight: bold;
+}
+
+.calendar-day.allowed:hover {
+  background-color: #fff59d !important;
+}
+/* Стили для дней */
+.calendar-day {
+  /* базовые стили */
+}
+
+.calendar-day.blocked {
+  background-color: #ffebee !important;
+  position: relative;
+  cursor: not-allowed;
+  opacity: 0.7;
+}
+
+.calendar-day.blocked::after {
+  content: "🔒";
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  font-size: 10px;
+  opacity: 0.7;
+}
+
+.calendar-day.allowed {
+  background-color: #fff9c4 !important;
+  position: relative;
+}
+
+.calendar-day.allowed::before {
+  content: "✓";
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  font-size: 12px;
+  color: #fbc02d;
+  font-weight: bold;
+}
+
+.calendar-day.allowed:hover {
+  background-color: #fff59d !important;
+}
+
+/* Стили для новых заявок */
+.event-name-badge.new {
+  border: 2px solid #4caf50;
+}
+/* Серые квадраты доступностей */
+.day-availabilities {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 2px;
+  margin-top: 4px;
+  padding: 2px;
+}
+
+.availability-square {
+  width: 20px;
+  height: 20px;
+  background-color: #e0e0e0;
+  border-radius: 3px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  font-weight: bold;
+  color: #666;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.availability-square:hover {
+  transform: scale(1.1);
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+}
+
+.availability-initial {
+  font-size: 10px;
+  font-weight: bold;
+  color: #666;
+}
+
+.availability-more {
+  font-size: 9px;
+  color: #666;
+  background: #f0f0f0;
+  padding: 2px 4px;
+  border-radius: 3px;
+}
+
+/* Запросы на замену */
+.swap-requests-section {
+  margin: 10px 20px;
+  padding: 15px;
+  background: #fff3e0;
+  border-radius: 8px;
+  border-left: 4px solid #ff9800;
+}
+
+.swap-requests-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.swap-request-card {
+  background: white;
+  border-radius: 8px;
+  padding: 12px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.swap-request-header {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+  font-size: 0.9rem;
+}
+
+.swap-date {
+  font-weight: bold;
+  color: #333;
+}
+
+.swap-status {
+  padding: 2px 8px;
+  border-radius: 12px;
+  font-size: 0.8rem;
+}
+
+.swap-status.pending {
+  background: #fff3e0;
+  color: #e65100;
+}
+
+.swap-status.accepted_by_employee {
+  background: #e8f5e8;
+  color: #2e7d32;
+}
+
+.swap-request-users {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.swap-user {
+  display: flex;
+  align-items: center;
+  gap: 5px;
+}
+
+.swap-user-avatar {
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: white;
+  font-size: 12px;
+  font-weight: bold;
+}
+
+.swap-arrow {
+  color: #999;
+  font-size: 14px;
+}
+
+.swap-reason-text {
+  font-size: 0.9rem;
+  color: #666;
+  margin-bottom: 10px;
+  padding: 8px;
+  background: #f5f5f5;
+  border-radius: 4px;
+}
+
+.swap-actions {
+  display: flex;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.swap-info-message {
+  font-size: 0.9rem;
+  color: #ff9800;
+  text-align: center;
+  padding: 5px;
+}
+
+/* Модалка замены */
+.swap-modal {
+  max-width: 500px;
+}
+
+.swap-info {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.swap-current-shift {
+  background: #f5f5f5;
+  padding: 15px;
+  border-radius: 8px;
+}
+
+.shift-details {
+  margin-top: 10px;
+}
+
+.shift-date {
+  font-weight: bold;
+  color: #333;
+}
+
+.shift-time {
+  color: #666;
+  font-size: 0.9rem;
+}
+
+.shift-title {
+  color: #333;
+  font-size: 0.9rem;
+  margin-top: 5px;
+}
+
+.available-employees-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.available-employee-card {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px;
+  border: 2px solid transparent;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.available-employee-card:hover {
+  background: #f5f5f5;
+}
+
+.available-employee-card.selected {
+  border-color: var(--user-color);
+  background: rgba(var(--user-color-rgb), 0.1);
+}
+
+.employee-shift {
+  font-size: 0.8rem;
+  color: #666;
+}
+
+.no-employees-message {
+  text-align: center;
+  padding: 20px;
+  color: #999;
+  font-style: italic;
+}
+
+.form-textarea {
+  width: 100%;
+  padding: 8px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-family: inherit;
+  resize: vertical;
+}
+
+.form-textarea:focus {
+  outline: none;
+  border-color: #2196f3;
+}
+
+/* Кнопка замены на событии */
+.event-swap-button {
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+  padding: 4px;
+}
+
+.event-swap-button:hover {
+  opacity: 1;
+}
+
+/* Легенда для серых квадратов */
+.legend-dot.availability {
+  background-color: #e0e0e0;
+  border: 1px solid #bdbdbd;
+}
+
+/* Детальный просмотр для доступностей */
+.day-detail-availabilities {
+  margin-bottom: 20px;
+}
+
+.day-detail-availability {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px;
+  background: #f5f5f5;
+  border-radius: 6px;
+  margin-bottom: 8px;
+}
+
+.availability-badge {
+  font-size: 0.7rem;
+  padding: 2px 6px;
+  background: #2196f3;
+  color: white;
+  border-radius: 12px;
+}
+/* Стили для разрешенного периода */
+.calendar-day.allowed-period {
+  background: linear-gradient(145deg, #fff9e6, #fff3cd);
+  border: 1px solid #ffeeba;
+}
+
+.calendar-day.allowed-period:hover {
+  background: linear-gradient(145deg, #fff3cd, #ffe69c);
+  border-color: #ffc107;
+}
+
+.week-day.allowed-period {
+  background: #fff9e6;
+}
+
+.week-day.allowed-period .week-day-number {
+  background: #fff3cd;
+  color: #856404;
+}
+
+/* Легенда для разрешенного периода */
+.legend-dot.allowed-period {
+  background: #ffc107;
+  border: 1px solid #ffb300;
+  position: relative;
+}
+
+.legend-dot.allowed-period::after {
+  content: "";
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: white;
+  border-radius: 50%;
+  top: 3px;
+  left: 3px;
+}
+
+/* Улучшенные стили для баннера */
+.availability-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  margin: 10px 20px;
+  border-radius: 12px;
+  font-size: 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.availability-banner.enabled {
+  background: #d4edda;
+  border-left: 4px solid #28a745;
+  color: #155724;
+}
+
+.availability-banner.disabled {
+  background: #f8d7da;
+  border-left: 4px solid #dc3545;
+  color: #721c24;
+}
+
+.availability-banner.pending {
+  background: #fff3cd;
+  border-left: 4px solid #ffc107;
+  color: #856404;
+}
+
+.availability-icon {
+  font-size: 20px;
+}
+
+.availability-message {
+  flex: 1;
+  font-weight: 500;
+}
+
+/* Календарь с отключенной доступностью */
+.calendar-day.availability-disabled {
+  opacity: 0.7;
+  cursor: not-allowed;
+  background: #f5f5f5;
+}
+
+.calendar-day.availability-disabled:hover {
+  background: #f5f5f5;
+  transform: none;
+}
+
+.week-day-number.disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #f0f0f0;
+}
+
+.week-day-number.disabled:hover {
+  background: #f0f0f0;
+  transform: none;
+}
+
+/* Индикаторы для своих событий */
+.my-event-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 16px;
+  height: 16px;
+  background: white;
+  color: #28a745;
+  border-radius: 50%;
+  font-size: 10px;
+  margin-left: 4px;
+}
+
+.event-name-badge.my-event {
+  box-shadow: 0 0 0 2px white;
+}
+
+.week-event.my-event {
+  border-left-width: 4px;
+}
+
+.day-event.my-event {
+  border-left-width: 4px;
+}
+
+/* Легенда */
+.legend-item.disabled .legend-dot {
+  background: #e0e0e0;
+  position: relative;
+}
+
+.legend-item.disabled .legend-dot::after {
+  content: "×";
+  position: absolute;
+  color: #999;
+  font-size: 14px;
+  font-weight: bold;
+  top: -2px;
+  left: 2px;
+}
+
+/* Предупреждение в модалке */
+.warning-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: #f8d7da;
+  border-radius: 8px;
+  margin-top: 12px;
+  color: #721c24;
+  font-size: 13px;
+}
+
+/* Отключенный переключатель */
+.shifts-toggle.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.shifts-toggle.disabled .shifts-toggle__checkbox {
+  cursor: not-allowed;
+}
+
+/* Кнопка добавления в дневном виде */
+.day-add-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 12px;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.day-add-button:hover {
+  background: #218838;
+}
+
+.day-add-button svg {
+  stroke: currentColor;
+}
+
+/* Статусы событий */
+.event-status.approved-status {
+  color: #28a745;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.event-status.pending-status {
+  color: #856404;
+  font-size: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+/* Стили для разрешенного периода */
+.calendar-day.allowed-period {
+  background: linear-gradient(145deg, #fff9e6, #fff3cd);
+  border: 2px solid #ffc107 !important;
+  position: relative;
+}
+
+.calendar-day.allowed-period:hover {
+  background: linear-gradient(145deg, #fff3cd, #ffe69c);
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(255, 193, 7, 0.3);
+}
+
+.calendar-day.allowed-period::after {
+  content: "✓";
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  font-size: 10px;
+  color: #ffc107;
+  background: white;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #ffc107;
+}
+
+.week-day.allowed-period {
+  background: #fff9e6;
+  border: 1px solid #ffc107;
+  border-radius: 8px;
+}
+
+.week-day.allowed-period .week-day-number {
+  background: #ffc107;
+  color: white;
+  font-weight: bold;
+}
+
+/* Легенда для разрешенного периода */
+.legend-dot.allowed-period {
+  background: #ffc107;
+  border: 2px solid #ffb300;
+  position: relative;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(255, 193, 7, 0.7);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(255, 193, 7, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(255, 193, 7, 0);
+  }
+}
+
+.legend-dot.allowed-period::after {
+  content: "";
+  position: absolute;
+  width: 6px;
+  height: 6px;
+  background: white;
+  border-radius: 50%;
+  top: 4px;
+  left: 4px;
+}
+
+/* Баннер статуса доступности */
+.availability-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 20px;
+  margin: 10px 20px;
+  border-radius: 12px;
+  font-size: 14px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  animation: slideDown 0.3s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.availability-banner.enabled {
+  background: #d4edda;
+  border-left: 4px solid #28a745;
+  color: #155724;
+}
+
+.availability-banner.disabled {
+  background: #f8d7da;
+  border-left: 4px solid #dc3545;
+  color: #721c24;
+}
+
+.availability-banner.pending {
+  background: #fff3cd;
+  border-left: 4px solid #ffc107;
+  color: #856404;
+}
+
+.availability-icon {
+  font-size: 24px;
+}
+
+.availability-message {
+  flex: 1;
+  font-weight: 500;
+}
+
+/* Календарь с отключенной доступностью */
+.calendar-day.availability-disabled {
+  opacity: 0.6;
+  cursor: not-allowed !important;
+  background: #f5f5f5;
+  position: relative;
+}
+
+.calendar-day.availability-disabled:hover {
+  background: #f5f5f5;
+  transform: none;
+  box-shadow: none;
+}
+
+.calendar-day.availability-disabled::before {
+  content: "🔒";
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  font-size: 10px;
+  opacity: 0.5;
+}
+
+.week-day-number.disabled {
+  opacity: 0.5;
+  cursor: not-allowed !important;
+  background: #f0f0f0;
+  position: relative;
+}
+
+.week-day-number.disabled:hover {
+  background: #f0f0f0;
+  transform: none;
+}
+
+.week-day-number.disabled::after {
+  content: "🔒";
+  position: absolute;
+  top: -2px;
+  right: -2px;
+  font-size: 8px;
+  opacity: 0.5;
+}
+
+/* Индикаторы для своих событий */
+.my-event-badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  background: white;
+  color: #28a745;
+  border-radius: 50%;
+  font-size: 11px;
+  margin-left: 4px;
+  border: 1px solid #28a745;
+}
+
+.event-name-badge.my-event {
+  box-shadow: 0 0 0 2px white, 0 0 0 3px #28a745;
+  position: relative;
+  z-index: 2;
+}
+
+.week-event.my-event {
+  border-left-width: 4px;
+  background: linear-gradient(
+    90deg,
+    rgba(40, 167, 69, 0.1) 0%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+.day-event.my-event {
+  border-left-width: 4px;
+  background: linear-gradient(
+    90deg,
+    rgba(40, 167, 69, 0.1) 0%,
+    rgba(255, 255, 255, 0) 100%
+  );
+}
+
+/* Легенда */
+.legend {
+  display: flex;
+  gap: 20px;
+  flex-wrap: wrap;
+  padding: 12px 20px;
+  background: white;
+  border-radius: 12px;
+  margin: 10px 20px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+}
+
+.legend-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+}
+
+.legend-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 4px;
+}
+
+.legend-dot.my-shift {
+  background: #4a90e2;
+}
+
+.legend-dot.other-shift {
+  background: #95a5a6;
+}
+
+.legend-dot.pending {
+  background: #f39c12;
+  opacity: 0.7;
+}
+
+.legend-item.disabled {
+  opacity: 0.7;
+}
+
+.legend-item.disabled .legend-dot {
+  background: #e0e0e0;
+  position: relative;
+}
+
+.legend-item.disabled .legend-dot::after {
+  content: "×";
+  position: absolute;
+  color: #999;
+  font-size: 14px;
+  font-weight: bold;
+  top: -2px;
+  left: 3px;
+}
+
+/* Предупреждение в модалке */
+.warning-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: #f8d7da;
+  border-radius: 8px;
+  margin-top: 12px;
+  color: #721c24;
+  font-size: 13px;
+  border-left: 3px solid #dc3545;
+}
+
+/* Отключенный переключатель */
+.shifts-toggle.disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.shifts-toggle.disabled .shifts-toggle__checkbox {
+  cursor: not-allowed;
+}
+
+/* Кнопка добавления в дневном виде */
+.day-add-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  background: #28a745;
+  color: white;
+  border: none;
+  border-radius: 24px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s;
+  box-shadow: 0 2px 4px rgba(40, 167, 69, 0.3);
+}
+
+.day-add-button:hover {
+  background: #218838;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(40, 167, 69, 0.4);
+}
+
+.day-add-button:active {
+  transform: translateY(0);
+}
+
+.day-add-button svg {
+  stroke: currentColor;
+}
+
+/* Статусы событий */
+.event-status.approved-status {
+  color: #28a745;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #d4edda;
+  padding: 2px 8px;
+  border-radius: 12px;
+  margin-top: 4px;
+  width: fit-content;
+}
+
+.event-status.pending-status {
+  color: #856404;
+  font-size: 11px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: #fff3cd;
+  padding: 2px 8px;
+  border-radius: 12px;
+  margin-top: 4px;
+  width: fit-content;
+}
+
+/* Модальное окно */
+.modal {
+  background: white;
+  border-radius: 16px;
+  padding: 24px;
+  max-width: 500px;
+  width: 90%;
+  max-height: 90vh;
+  overflow-y: auto;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.2);
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20px;
+  padding-bottom: 12px;
+  border-bottom: 2px solid #f0f0f0;
+}
+
+.modal-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #2c3e50;
+  margin: 0;
+}
+
+.modal-close {
+  background: none;
+  border: none;
+  font-size: 20px;
+  cursor: pointer;
+  color: #999;
+  padding: 4px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.modal-close:hover {
+  background: #f0f0f0;
+  color: #666;
+}
+
+.form-group {
+  margin-bottom: 16px;
+}
+
+.form-label {
+  display: block;
+  font-size: 13px;
+  font-weight: 500;
+  color: #6c757d;
+  margin-bottom: 6px;
+}
+
+.form-input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #dee2e6;
+  border-radius: 8px;
+  font-size: 14px;
+  transition: all 0.2s;
+}
+
+.form-input:focus {
+  outline: none;
+  border-color: #4a90e2;
+  box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+}
+
+.time-inputs {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.time-inputs .form-input.time {
+  flex: 1;
+}
+
+.time-separator {
+  color: #999;
+  font-weight: 500;
+}
+
+.info-badge {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background: #e9ecef;
+  border-radius: 8px;
+  margin-top: 16px;
+  font-size: 13px;
+  color: #495057;
+}
+
+.modal-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  margin-top: 20px;
+  padding-top: 16px;
+  border-top: 1px solid #e9ecef;
+}
+
+.btn {
+  padding: 10px 20px;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  border: none;
+  transition: all 0.2s;
+}
+
+.btn-primary {
+  background: #4a90e2;
+  color: white;
+}
+
+.btn-primary:hover:not(:disabled) {
+  background: #357abd;
+  transform: translateY(-1px);
+  box-shadow: 0 4px 8px rgba(74, 144, 226, 0.3);
+}
+
+.btn-primary:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.btn-secondary {
+  background: #e9ecef;
+  color: #495057;
+}
+
+.btn-secondary:hover {
+  background: #dee2e6;
+}
+
+.btn-danger {
+  background: #dc3545;
+  color: white;
+}
+
+.btn-danger:hover {
+  background: #c82333;
+}
+
+.btn-small {
+  padding: 6px 12px;
+  font-size: 12px;
+}
+/* Стили для индикации разрешенных дней */
+.calendar-day.availability-allowed {
+  background-color: rgba(255, 255, 0, 0.15);
+  border: 2px solid rgba(255, 215, 0, 0.4);
+  position: relative;
+}
+
+.calendar-day.availability-allowed:hover {
+  background-color: rgba(255, 255, 0, 0.25);
+  border-color: rgba(255, 215, 0, 0.8);
+}
+
+.calendar-day.availability-allowed::after {
+  content: "";
+  position: absolute;
+  top: 2px;
+  right: 2px;
+  width: 6px;
+  height: 6px;
+  background-color: #ffc107;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.6;
+    transform: scale(1.2);
+  }
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+/* Индикатор в шапке */
+.availability-indicator {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 12px;
+  background-color: #f8f9fa;
+  border-radius: 20px;
+  font-size: 13px;
+  margin-left: 16px;
+  border: 1px solid #e0e0e0;
+}
+
+.availability-indicator.allowed {
+  background-color: #fff9c4;
+  color: #856404;
+  border-color: #ffe082;
+}
+
+.availability-indicator.allowed .indicator-dot {
+  background-color: #ffc107;
+  box-shadow: 0 0 0 2px rgba(255, 193, 7, 0.3);
+}
+
+.availability-indicator.blocked {
+  background-color: #ffebee;
+  color: #c62828;
+  border-color: #ef9a9a;
+}
+
+.availability-indicator.blocked .indicator-dot {
+  background-color: #f44336;
+  box-shadow: 0 0 0 2px rgba(244, 67, 54, 0.3);
+}
+
+.indicator-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  display: inline-block;
+  transition: all 0.3s ease;
+}
+
+/* Легенда */
+.legend-dot.allowed-day {
+  background-color: #ffc107;
+  border: 2px solid #ffd700;
+  animation: pulse 2s infinite;
+}
+
+/* Предупреждение о недоступности */
+.availability-warning {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px;
+  background-color: #fff3cd;
+  border: 1px solid #ffeeba;
+  border-radius: 8px;
+  margin-bottom: 16px;
+  color: #856404;
+  font-size: 14px;
+}
+
+.warning-icon {
+  font-size: 18px;
+}
+
+/* Адаптивность для мобильных */
+@media (max-width: 768px) {
+  .availability-indicator {
+    margin-left: 0;
+    margin-top: 8px;
+    width: 100%;
+    justify-content: center;
+  }
+
+  .calendar-day.availability-allowed::after {
+    width: 4px;
+    height: 4px;
+  }
+}
+
+/* Недельный вид с подсветкой */
+.week-day.availability-allowed {
+  background-color: rgba(255, 255, 0, 0.1);
+  border-radius: 8px;
+  position: relative;
+}
+
+.week-day.availability-allowed::after {
+  content: "";
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 6px;
+  height: 6px;
+  background-color: #ffc107;
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+}
+
+/* Подсказка при наведении */
+.calendar-day.availability-allowed:hover::before {
+  content: "✓ Możesz dodać dostępność";
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%);
+  background-color: #333;
+  color: white;
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 11px;
+  white-space: nowrap;
+  z-index: 1000;
+  margin-bottom: 4px;
+}

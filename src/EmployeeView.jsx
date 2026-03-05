@@ -1,9 +1,16 @@
 // import { useState, useEffect } from "react";
-// import { getDatabase, ref, onValue } from "firebase/database";
+// import {
+//   getDatabase,
+//   ref,
+//   onValue,
+//   push,
+//   set,
+//   remove,
+// } from "firebase/database";
 // import { initializeApp } from "firebase/app";
 // import "./EmployeeView.css";
 
-// // Firebase конфигурация
+// // Firebase конфигурация из переменных окружения
 // const firebaseConfig = {
 //   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
 //   authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
@@ -15,8 +22,17 @@
 //   measurementId: import.meta.env.VITE_FIREBASE_MEASUREMENT_ID,
 // };
 
-// const app = initializeApp(firebaseConfig);
-// const db = getDatabase(app);
+// // Инициализация Firebase
+// let app;
+// let db;
+
+// try {
+//   app = initializeApp(firebaseConfig, "employee-app");
+//   db = getDatabase(app);
+//   console.log("EmployeeView Firebase инициализирован успешно");
+// } catch (error) {
+//   console.error("EmployeeView Ошибка инициализации Firebase:", error);
+// }
 
 // const DEFAULT_PASSWORD = "VsJetZone24pr";
 
@@ -25,13 +41,6 @@
 //   const month = String(date.getMonth() + 1).padStart(2, "0");
 //   const day = String(date.getDate()).padStart(2, "0");
 //   return `${year}-${month}-${day}`;
-// };
-
-// const formatDateForDisplay = (date) => {
-//   return date.toLocaleDateString("pl-PL", {
-//     day: "numeric",
-//     month: "short",
-//   });
 // };
 
 // const calculateHoursDiff = (startTime, endTime) => {
@@ -80,7 +89,7 @@
 //     <div className="employee-login-container">
 //       <div className="employee-login-card">
 //         <div className="employee-login-header">
-//           <div className="employee-login-icon">JetZone24</div>
+//           <div className="employee-login-icon">Baza24</div>
 //           <h1 className="employee-login-title">Panel pracownika</h1>
 //           <p className="employee-login-subtitle">
 //             Zaloguj się, aby zarządzać swoją dostępnością
@@ -97,7 +106,7 @@
 //               <input
 //                 type="email"
 //                 className="employee-login-input"
-//                 placeholder="twoj.email@jetzone24.com"
+//                 placeholder="twoj.email@firma.pl"
 //                 value={email}
 //                 onChange={(e) => setEmail(e.target.value)}
 //                 required
@@ -110,7 +119,7 @@
 //             <label className="employee-login-label">Hasło</label>
 //             <div className="employee-login-input-wrapper">
 //               <span className="login-input-icon">
-//                 <i className="fa-solid fa-shield-halved"></i>{" "}
+//                 <i className="fa-solid fa-shield-halved"></i>
 //               </span>
 //               <input
 //                 type="password"
@@ -151,7 +160,7 @@
 //         </form>
 
 //         <div className="employee-login-footer">
-//           <p>Dostęp tylko dla pracowników JetZone24</p>
+//           <p>Dostęp tylko dla pracowników</p>
 //         </div>
 //       </div>
 //     </div>
@@ -235,11 +244,12 @@
 //   const [showModal, setShowModal] = useState(false);
 //   const [showStatsModal, setShowStatsModal] = useState(false);
 //   const [showOnlyMyShifts, setShowOnlyMyShifts] = useState(false);
-//   const [calendarView, setCalendarView] = useState("month"); // 'month', 'week', 'day'
+//   const [calendarView, setCalendarView] = useState("month");
 //   const [selectedDate, setSelectedDate] = useState(null);
 //   const [statsMonth, setStatsMonth] = useState(new Date());
-//   // НОВОЕ: состояние для детального просмотра дня на мобильных
 //   const [selectedDayDetail, setSelectedDayDetail] = useState(null);
+//   const [firebaseError, setFirebaseError] = useState(false);
+//   const [firebaseErrorMessage, setFirebaseErrorMessage] = useState("");
 
 //   const [availabilityForm, setAvailabilityForm] = useState({
 //     id: null,
@@ -257,8 +267,33 @@
 //     pendingShifts: 0,
 //     pendingHours: 0,
 //   });
-
+//   // Загружаем данные после восстановления сотрудника из localStorage
 //   useEffect(() => {
+//     if (employee) {
+//       // Данные уже загружаются в других useEffect
+//       console.log("Восстановлена сессия для:", employee.name);
+//     }
+//   }, [employee]);
+//   useEffect(() => {
+//     if (!db) {
+//       setFirebaseError(true);
+//       setFirebaseErrorMessage("Nie można połączyć się z bazą danych");
+//       setLoading(false);
+//       return;
+//     }
+
+//     // Проверяем, есть ли сохраненный сотрудник в localStorage
+//     const savedEmployee = localStorage.getItem("employee");
+//     if (savedEmployee) {
+//       try {
+//         const parsedEmployee = JSON.parse(savedEmployee);
+//         setEmployee(parsedEmployee);
+//       } catch (e) {
+//         console.error("Ошибка загрузки сохраненного сотрудника:", e);
+//         localStorage.removeItem("employee");
+//       }
+//     }
+
 //     loadInitialData();
 //   }, []);
 
@@ -268,89 +303,146 @@
 //     }
 //   }, [events, pendingEvents, employee, statsMonth]);
 
-//   // Удаление только СВОИХ подтвержденных событий из ожидающих
+//   // Загрузка ожидающих событий из Firebase при монтировании
 //   useEffect(() => {
-//     const removeConfirmedPendingEvents = () => {
-//       if (!employee) return;
+//     if (!db) return;
 
-//       const publishedEventKeys = new Set(
-//         Object.values(events).map(
-//           (event) =>
-//             `${event.userId}_${event.date}_${event.startTime}_${event.endTime}`
-//         )
-//       );
-
-//       const updatedPendingEvents = pendingEvents.filter((pendingEvent) => {
-//         if (pendingEvent.userId !== employee.id) {
-//           return true;
+//     // Подписываемся на изменения в папке pendingEvents в Firebase
+//     const pendingEventsRef = ref(db, "pendingEvents");
+//     onValue(
+//       pendingEventsRef,
+//       (snapshot) => {
+//         const data = snapshot.val();
+//         console.log("Загружены ожидающие события из Firebase:", data);
+//         if (data) {
+//           // Преобразуем объект в массив
+//           const pendingArray = Object.values(data);
+//           setPendingEvents(pendingArray);
+//           // Также сохраняем в localStorage для обратной совместимости
+//           localStorage.setItem("pendingEvents", JSON.stringify(pendingArray));
+//         } else {
+//           setPendingEvents([]);
 //         }
-
-//         const pendingKey = `${pendingEvent.userId}_${pendingEvent.date}_${pendingEvent.startTime}_${pendingEvent.endTime}`;
-//         return !publishedEventKeys.has(pendingKey);
-//       });
-
-//       if (updatedPendingEvents.length !== pendingEvents.length) {
-//         setPendingEvents(updatedPendingEvents);
-//         localStorage.setItem(
-//           "pendingEvents",
-//           JSON.stringify(updatedPendingEvents)
-//         );
+//       },
+//       (error) => {
+//         console.error("Ошибка загрузки ожидающих событий:", error);
 //       }
-//     };
-
-//     removeConfirmedPendingEvents();
-//   }, [events, employee]);
+//     );
+//   }, []);
 
 //   const loadInitialData = async () => {
 //     setLoading(true);
 //     await loadUsersFromFirebase();
 //     await loadEventsFromFirebase();
-//     const savedPending = localStorage.getItem("pendingEvents");
-//     if (savedPending) {
-//       try {
-//         const parsedPending = JSON.parse(savedPending);
-//         setPendingEvents(parsedPending);
-//       } catch (e) {
-//         setPendingEvents([]);
-//       }
-//     }
 //     setLoading(false);
 //   };
 
 //   const loadUsersFromFirebase = () => {
+//     if (!db) return;
+
 //     const usersRef = ref(db, "users");
-//     onValue(usersRef, (snapshot) => {
-//       const data = snapshot.val();
-//       if (data) {
-//         const usersMap = new Map();
-//         Object.values(data).forEach((user) => {
-//           if (user && user.id) {
-//             usersMap.set(user.id, user);
-//           }
-//         });
-//         const uniqueUsers = Array.from(usersMap.values());
-//         setUsers(uniqueUsers);
-//       } else {
-//         setUsers([]);
+//     onValue(
+//       usersRef,
+//       (snapshot) => {
+//         const data = snapshot.val();
+//         console.log("Загружены пользователи:", data);
+//         if (data) {
+//           const usersMap = new Map();
+//           Object.values(data).forEach((user) => {
+//             if (user && user.id) {
+//               usersMap.set(user.id, user);
+//             }
+//           });
+//           const uniqueUsers = Array.from(usersMap.values());
+//           setUsers(uniqueUsers);
+//         } else {
+//           setUsers([]);
+//         }
+//       },
+//       (error) => {
+//         console.error("Ошибка загрузки пользователей:", error);
+//         setFirebaseError(true);
+//         setFirebaseErrorMessage(
+//           `Błąd ładowania użytkowników: ${error.message}`
+//         );
 //       }
-//     });
+//     );
 //   };
 
 //   const loadEventsFromFirebase = () => {
+//     if (!db) return;
+
 //     const eventsRef = ref(db, "calendarEvents");
-//     onValue(eventsRef, (snapshot) => {
-//       const data = snapshot.val();
-//       if (data) {
-//         setEvents(data);
-//       } else {
-//         setEvents({});
+//     onValue(
+//       eventsRef,
+//       (snapshot) => {
+//         const data = snapshot.val();
+//         console.log("Загружены события:", data);
+//         if (data) {
+//           setEvents(data);
+//         } else {
+//           setEvents({});
+//         }
+//       },
+//       (error) => {
+//         console.error("Ошибка загрузки событий:", error);
+//         setFirebaseError(true);
+//         setFirebaseErrorMessage(`Błąd ładowania wydarzeń: ${error.message}`);
 //       }
-//     });
+//     );
 //   };
 
-//   const savePendingEvents = (newPendingEvents) => {
+//   // Функция для сохранения ожидающего события в Firebase
+//   const savePendingEventToFirebase = async (event) => {
+//     if (!db) return null;
+
+//     try {
+//       // Используем push для создания уникального ключа или set если есть ID
+//       const pendingRef = ref(db, `pendingEvents/${event.id}`);
+//       await set(pendingRef, event);
+//       console.log("Событие сохранено в Firebase:", event.id);
+//       return event.id;
+//     } catch (error) {
+//       console.error("Ошибка сохранения в Firebase:", error);
+//       throw error;
+//     }
+//   };
+
+//   // Функция для удаления ожидающего события из Firebase
+//   const deletePendingEventFromFirebase = async (eventId) => {
+//     if (!db) return;
+
+//     try {
+//       const pendingRef = ref(db, `pendingEvents/${eventId}`);
+//       await remove(pendingRef);
+//       console.log("Событие удалено из Firebase:", eventId);
+//     } catch (error) {
+//       console.error("Ошибка удаления из Firebase:", error);
+//     }
+//   };
+
+//   const savePendingEvents = async (newPendingEvents) => {
+//     // Обновляем состояние
 //     setPendingEvents(newPendingEvents);
+
+//     // Сохраняем в localStorage для обратной совместимости
 //     localStorage.setItem("pendingEvents", JSON.stringify(newPendingEvents));
+
+//     // Сохраняем каждое событие в Firebase
+//     try {
+//       // Сначала удаляем все старые события? Нет, лучше обновлять каждое
+//       for (const event of newPendingEvents) {
+//         await savePendingEventToFirebase(event);
+//       }
+
+//       // Находим события, которые были удалены
+//       const currentIds = new Set(newPendingEvents.map((e) => e.id));
+//       // Получаем все события из Firebase (нужно будет потом добавить логику для удаления)
+//       // Но пока можно просто перезаписывать
+//     } catch (error) {
+//       console.error("Ошибка при сохранении в Firebase:", error);
+//       alert("Wystąpił błąd podczas zapisywania w bazie danych");
+//     }
 //   };
 
 //   const calculateMonthlyStatistics = () => {
@@ -365,7 +457,6 @@
 //     const startStr = formatDateToYMD(startDate);
 //     const endStr = formatDateToYMD(endDate);
 
-//     // Фильтруем события за выбранный месяц
 //     const userEvents = Object.values(events).filter(
 //       (e) => e.userId === employee.id && e.date >= startStr && e.date <= endStr
 //     );
@@ -429,18 +520,15 @@
 //     setShowModal(true);
 //   };
 
-//   // НОВАЯ: функция для обработки клика по дню с учетом мобильных устройств
 //   const handleDayClick = (date) => {
 //     if (calendarView === "month" && window.innerWidth <= 768) {
-//       // На телефоне в месячном виде показываем детальный просмотр
 //       setSelectedDayDetail(date);
 //     } else {
-//       // На десктопе или в других видах открываем модалку добавления
 //       handleDateClick(date);
 //     }
 //   };
 
-//   const handleCreateAvailability = () => {
+//   const handleCreateAvailability = async () => {
 //     if (!employee) return;
 
 //     if (!availabilityForm.title.trim()) {
@@ -460,33 +548,52 @@
 //       isPending: true,
 //     };
 
-//     if (availabilityForm.id) {
-//       const updatedPendingEvents = pendingEvents.map((e) =>
-//         e.id === availabilityForm.id ? newAvailability : e
-//       );
-//       savePendingEvents(updatedPendingEvents);
-//     } else {
-//       savePendingEvents([...pendingEvents, newAvailability]);
-//     }
+//     try {
+//       if (availabilityForm.id) {
+//         // Обновление существующего события
+//         const updatedPendingEvents = pendingEvents.map((e) =>
+//           e.id === availabilityForm.id ? newAvailability : e
+//         );
+//         await savePendingEvents(updatedPendingEvents);
+//       } else {
+//         // Создание нового события
+//         await savePendingEvents([...pendingEvents, newAvailability]);
+//       }
 
-//     setShowModal(false);
-//     setAvailabilityForm({
-//       id: null,
-//       title: "Dostępność",
-//       date: formatDateToYMD(new Date()),
-//       startTime: "13:00",
-//       endTime: "20:00",
-//       userId: employee.id,
-//       isPending: true,
-//     });
+//       setShowModal(false);
+//       setAvailabilityForm({
+//         id: null,
+//         title: "Dostępność",
+//         date: formatDateToYMD(new Date()),
+//         startTime: "13:00",
+//         endTime: "20:00",
+//         userId: employee.id,
+//         isPending: true,
+//       });
+
+//       alert("✅ Dostępność została dodana i czeka na zatwierdzenie");
+//     } catch (error) {
+//       console.error("Ошибка при создании доступности:", error);
+//       alert("❌ Wystąpił błąd podczas zapisywania");
+//     }
 //   };
 
-//   const handleDeleteAvailability = (eventId) => {
+//   const handleDeleteAvailability = async (eventId) => {
 //     if (!window.confirm("Usunąć tę dostępność?")) return;
 
-//     const newPendingEvents = pendingEvents.filter((e) => e.id !== eventId);
-//     savePendingEvents(newPendingEvents);
-//     setShowModal(false);
+//     try {
+//       const newPendingEvents = pendingEvents.filter((e) => e.id !== eventId);
+//       await savePendingEvents(newPendingEvents);
+
+//       // Удаляем из Firebase
+//       await deletePendingEventFromFirebase(eventId);
+
+//       setShowModal(false);
+//       alert("✅ Dostępność została usunięta");
+//     } catch (error) {
+//       console.error("Ошибка при удалении:", error);
+//       alert("❌ Wystąpił błąd podczas usuwania");
+//     }
 //   };
 
 //   const getUserById = (userId) => {
@@ -512,7 +619,6 @@
 
 //     let allEvents = [...published, ...pending].filter((event) => event.user);
 
-//     // Фильтруем по переключателю "Только мои смены"
 //     if (showOnlyMyShifts && employee) {
 //       allEvents = allEvents.filter((event) => event.userId === employee.id);
 //     }
@@ -526,8 +632,6 @@
 
 //   const getFirstDayOfMonth = (year, month) => {
 //     const day = new Date(year, month, 1).getDay();
-//     // В JS: 0 - воскресенье, 1 - понедельник, ..., 6 - суббота
-//     // Нам нужно: понедельник = 0, воскресенье = 6
 //     return day === 0 ? 6 : day - 1;
 //   };
 
@@ -551,6 +655,12 @@
 //       newDate.setMonth(prev.getMonth() + direction);
 //       return newDate;
 //     });
+//   };
+//   const handleEmployeeLogin = (employeeData) => {
+//     // Сохраняем в localStorage
+//     localStorage.setItem("employee", JSON.stringify(employeeData));
+//     // Устанавливаем в состояние
+//     setEmployee(employeeData);
 //   };
 
 //   const renderMonthView = () => {
@@ -587,15 +697,12 @@
 //           {dayEvents.length > 0 && (
 //             <div className="day-events-compact">
 //               {dayEvents.slice(0, 2).map((event) => {
-//                 // Получаем короткое имя (максимум 4 буквы)
 //                 const nameParts = event.user?.name?.split(" ") || ["?"];
 //                 let displayName = "";
 
 //                 if (nameParts.length > 1) {
-//                   // Если есть имя и фамилия - берем первую букву фамилии
 //                   displayName = nameParts[0].substring(0, 3) + nameParts[1][0];
 //                 } else {
-//                   // Если только имя - берем первые 4 буквы
 //                   displayName = nameParts[0].substring(0, 4);
 //                 }
 
@@ -608,7 +715,6 @@
 //                     style={{
 //                       backgroundColor: event.user?.color || "#666",
 //                       opacity: event.isPending ? 0.7 : 1,
-//                       borderLeft: event.isPending ? "2px dashed #000" : "none",
 //                     }}
 //                     title={`${event.user?.name}: ${event.startTime} - ${event.endTime}`}
 //                   >
@@ -760,6 +866,9 @@
 //   };
 
 //   const handleLogout = () => {
+//     // Удаляем из localStorage
+//     localStorage.removeItem("employee");
+//     // Очищаем состояние
 //     setEmployee(null);
 //   };
 
@@ -772,8 +881,26 @@
 //     );
 //   }
 
+//   if (firebaseError) {
+//     return (
+//       <div className="error-screen">
+//         <div className="error-icon">⚠️</div>
+//         <h2>Błąd połączenia z bazą danych</h2>
+//         <p>{firebaseErrorMessage || "Nie można połączyć się z Firebase."}</p>
+//         <button
+//           className="btn btn-primary"
+//           onClick={() => window.location.reload()}
+//         >
+//           Odśwież stronę
+//         </button>
+//       </div>
+//     );
+//   }
+
 //   if (!employee) {
-//     return <EmployeeLoginScreen onLogin={setEmployee} employees={users} />;
+//     return (
+//       <EmployeeLoginScreen onLogin={handleEmployeeLogin} employees={users} />
+//     );
 //   }
 
 //   return (
@@ -1171,7 +1298,6 @@
 //           </div>
 
 //           <div className="day-detail-content">
-//             {/* Кнопка добавления своей доступности */}
 //             <button
 //               className="add-availability-button"
 //               onClick={() => {
@@ -1190,7 +1316,6 @@
 //               <span>Dodaj swoją dostępność</span>
 //             </button>
 
-//             {/* Список событий */}
 //             <div className="day-events-list">
 //               {getAllEventsForDate(formatDateToYMD(selectedDayDetail)).map(
 //                 (event) => (
@@ -1550,6 +1675,10 @@ export default function EmployeeView() {
   const [firebaseError, setFirebaseError] = useState(false);
   const [firebaseErrorMessage, setFirebaseErrorMessage] = useState("");
 
+  // НОВЫЕ СОСТОЯНИЯ ДЛЯ НАСТРОЕК ДОСТУПНОСТИ
+  const [availabilitySettings, setAvailabilitySettings] = useState(null);
+  const [currentMonthSettings, setCurrentMonthSettings] = useState(null);
+
   const [availabilityForm, setAvailabilityForm] = useState({
     id: null,
     title: "Dostępność",
@@ -1566,13 +1695,14 @@ export default function EmployeeView() {
     pendingShifts: 0,
     pendingHours: 0,
   });
+
   // Загружаем данные после восстановления сотрудника из localStorage
   useEffect(() => {
     if (employee) {
-      // Данные уже загружаются в других useEffect
-      console.log("Восстановлена сессия для:", employee.name);
+      console.log("Wосстановлена сессия для:", employee.name);
     }
   }, [employee]);
+
   useEffect(() => {
     if (!db) {
       setFirebaseError(true);
@@ -1594,6 +1724,7 @@ export default function EmployeeView() {
     }
 
     loadInitialData();
+    loadAvailabilitySettings(); // НОВОЕ: загрузка настроек доступности
   }, []);
 
   useEffect(() => {
@@ -1606,7 +1737,6 @@ export default function EmployeeView() {
   useEffect(() => {
     if (!db) return;
 
-    // Подписываемся на изменения в папке pendingEvents в Firebase
     const pendingEventsRef = ref(db, "pendingEvents");
     onValue(
       pendingEventsRef,
@@ -1614,10 +1744,8 @@ export default function EmployeeView() {
         const data = snapshot.val();
         console.log("Загружены ожидающие события из Firebase:", data);
         if (data) {
-          // Преобразуем объект в массив
           const pendingArray = Object.values(data);
           setPendingEvents(pendingArray);
-          // Также сохраняем в localStorage для обратной совместимости
           localStorage.setItem("pendingEvents", JSON.stringify(pendingArray));
         } else {
           setPendingEvents([]);
@@ -1628,6 +1756,32 @@ export default function EmployeeView() {
       }
     );
   }, []);
+
+  // НОВАЯ ФУНКЦИЯ: загрузка настроек доступности
+  const loadAvailabilitySettings = () => {
+    if (!db) return;
+
+    const settingsRef = ref(db, "settings/availability");
+    onValue(settingsRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        setAvailabilitySettings(data);
+
+        // Определяем настройки для текущего месяца
+        const currentMonthKey = `${new Date().getFullYear()}-${String(
+          new Date().getMonth() + 1
+        ).padStart(2, "0")}`;
+        const currentSettings = data[currentMonthKey];
+
+        if (currentSettings) {
+          setCurrentMonthSettings(currentSettings);
+        } else {
+          // Если нет настроек для текущего месяца, отключаем возможность добавления
+          setCurrentMonthSettings({ enabled: false });
+        }
+      }
+    });
+  };
 
   const loadInitialData = async () => {
     setLoading(true);
@@ -1696,7 +1850,6 @@ export default function EmployeeView() {
     if (!db) return null;
 
     try {
-      // Используем push для создания уникального ключа или set если есть ID
       const pendingRef = ref(db, `pendingEvents/${event.id}`);
       await set(pendingRef, event);
       console.log("Событие сохранено в Firebase:", event.id);
@@ -1721,23 +1874,15 @@ export default function EmployeeView() {
   };
 
   const savePendingEvents = async (newPendingEvents) => {
-    // Обновляем состояние
     setPendingEvents(newPendingEvents);
-
-    // Сохраняем в localStorage для обратной совместимости
     localStorage.setItem("pendingEvents", JSON.stringify(newPendingEvents));
 
-    // Сохраняем каждое событие в Firebase
     try {
-      // Сначала удаляем все старые события? Нет, лучше обновлять каждое
       for (const event of newPendingEvents) {
         await savePendingEventToFirebase(event);
       }
 
-      // Находим события, которые были удалены
       const currentIds = new Set(newPendingEvents.map((e) => e.id));
-      // Получаем все события из Firebase (нужно будет потом добавить логику для удаления)
-      // Но пока можно просто перезаписывать
     } catch (error) {
       console.error("Ошибка при сохранении в Firebase:", error);
       alert("Wystąpił błąd podczas zapisywania w bazie danych");
@@ -1785,8 +1930,30 @@ export default function EmployeeView() {
     });
   };
 
+  // ОБНОВЛЕННАЯ ФУНКЦИЯ: обработка клика по дате с проверкой доступности
   const handleDateClick = (date) => {
     if (!employee) return;
+
+    // Проверяем, разрешено ли добавлять доступность в этот день
+    if (currentMonthSettings && !currentMonthSettings.enabled) {
+      alert(
+        "⛔ Dodawanie dostępności jest obecnie wyłączone przez administratora"
+      );
+      return;
+    }
+
+    // Проверяем, входит ли день в разрешенный диапазон
+    const day = date.getDate();
+    if (
+      currentMonthSettings &&
+      currentMonthSettings.enabled &&
+      (day < currentMonthSettings.startDay || day > currentMonthSettings.endDay)
+    ) {
+      alert(
+        `⛔ Możesz dodawać dostępność tylko od ${currentMonthSettings.startDay} do ${currentMonthSettings.endDay} dnia miesiąca`
+      );
+      return;
+    }
 
     const dateStr = formatDateToYMD(date);
     setSelectedDate(dateStr);
@@ -1849,13 +2016,11 @@ export default function EmployeeView() {
 
     try {
       if (availabilityForm.id) {
-        // Обновление существующего события
         const updatedPendingEvents = pendingEvents.map((e) =>
           e.id === availabilityForm.id ? newAvailability : e
         );
         await savePendingEvents(updatedPendingEvents);
       } else {
-        // Создание нового события
         await savePendingEvents([...pendingEvents, newAvailability]);
       }
 
@@ -1883,8 +2048,6 @@ export default function EmployeeView() {
     try {
       const newPendingEvents = pendingEvents.filter((e) => e.id !== eventId);
       await savePendingEvents(newPendingEvents);
-
-      // Удаляем из Firebase
       await deletePendingEventFromFirebase(eventId);
 
       setShowModal(false);
@@ -1955,13 +2118,13 @@ export default function EmployeeView() {
       return newDate;
     });
   };
+
   const handleEmployeeLogin = (employeeData) => {
-    // Сохраняем в localStorage
     localStorage.setItem("employee", JSON.stringify(employeeData));
-    // Устанавливаем в состояние
     setEmployee(employeeData);
   };
 
+  // ОБНОВЛЕННАЯ ФУНКЦИЯ: рендер месяца с подсветкой разрешенных дней
   const renderMonthView = () => {
     if (!employee) return null;
 
@@ -1981,6 +2144,12 @@ export default function EmployeeView() {
       const dateStr = formatDateToYMD(date);
       const dayEvents = getAllEventsForDate(dateStr);
 
+      // НОВОЕ: проверка, разрешено ли добавлять доступность в этот день
+      const isAvailabilityAllowed =
+        currentMonthSettings?.enabled &&
+        day >= (currentMonthSettings?.startDay || 1) &&
+        day <= (currentMonthSettings?.endDay || 31);
+
       const isToday = formatDateToYMD(new Date()) === dateStr;
 
       days.push(
@@ -1988,7 +2157,7 @@ export default function EmployeeView() {
           key={day}
           className={`calendar-day ${isToday ? "today" : ""} ${
             selectedDate === dateStr ? "selected" : ""
-          }`}
+          } ${isAvailabilityAllowed ? "availability-allowed" : ""}`}
           onClick={() => handleDayClick(date)}
         >
           <div className="day-number">{day}</div>
@@ -2050,8 +2219,20 @@ export default function EmployeeView() {
       const dayEvents = getAllEventsForDate(dateStr);
       const isToday = formatDateToYMD(new Date()) === dateStr;
 
+      // НОВОЕ: проверка разрешенных дней
+      const isAvailabilityAllowed =
+        currentMonthSettings?.enabled &&
+        date.getDate() >= (currentMonthSettings?.startDay || 1) &&
+        date.getDate() <= (currentMonthSettings?.endDay || 31) &&
+        date.getMonth() === currentDate.getMonth();
+
       days.push(
-        <div key={i} className={`week-day ${isToday ? "today" : ""}`}>
+        <div
+          key={i}
+          className={`week-day ${isToday ? "today" : ""} ${
+            isAvailabilityAllowed ? "availability-allowed" : ""
+          }`}
+        >
           <div className="week-day-header">
             <div className="week-day-name">
               {date.toLocaleDateString("pl-PL", { weekday: "short" })}
@@ -2165,9 +2346,7 @@ export default function EmployeeView() {
   };
 
   const handleLogout = () => {
-    // Удаляем из localStorage
     localStorage.removeItem("employee");
-    // Очищаем состояние
     setEmployee(null);
   };
 
@@ -2234,6 +2413,22 @@ export default function EmployeeView() {
               <span className="user-email">{employee.email}</span>
             </div>
           </div>
+
+          {/* НОВЫЙ ИНДИКАТОР СТАТУСА ДОСТУПНОСТИ */}
+          {currentMonthSettings && (
+            <div
+              className={`availability-indicator ${
+                currentMonthSettings.enabled ? "allowed" : "blocked"
+              }`}
+            >
+              <span className="indicator-dot"></span>
+              <span>
+                {currentMonthSettings.enabled
+                  ? `Dostępność: ${currentMonthSettings.startDay}-${currentMonthSettings.endDay}`
+                  : "Dostępność wyłączona"}
+              </span>
+            </div>
+          )}
         </div>
       </header>
 
@@ -2271,6 +2466,13 @@ export default function EmployeeView() {
           <div className="legend-dot pending"></div>
           <span>Oczekuje</span>
         </div>
+        {/* НОВЫЙ ЭЛЕМЕНТ ЛЕГЕНДЫ */}
+        {currentMonthSettings?.enabled && (
+          <div className="legend-item">
+            <div className="legend-dot allowed-day"></div>
+            <span>Dni, w których możesz dodać dostępność</span>
+          </div>
+        )}
       </div>
 
       <div className="navigation-bar">
@@ -2597,23 +2799,33 @@ export default function EmployeeView() {
           </div>
 
           <div className="day-detail-content">
-            <button
-              className="add-availability-button"
-              onClick={() => {
-                setSelectedDayDetail(null);
-                handleDateClick(selectedDayDetail);
-              }}
-            >
-              <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                <path
-                  d="M9 3V15M3 9H15"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  strokeLinecap="round"
-                />
-              </svg>
-              <span>Dodaj swoją dostępność</span>
-            </button>
+            {/* НОВОЕ: проверка доступности перед показом кнопки добавления */}
+            {currentMonthSettings?.enabled &&
+            selectedDayDetail.getDate() >= currentMonthSettings.startDay &&
+            selectedDayDetail.getDate() <= currentMonthSettings.endDay ? (
+              <button
+                className="add-availability-button"
+                onClick={() => {
+                  setSelectedDayDetail(null);
+                  handleDateClick(selectedDayDetail);
+                }}
+              >
+                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                  <path
+                    d="M9 3V15M3 9H15"
+                    stroke="currentColor"
+                    strokeWidth="1.5"
+                    strokeLinecap="round"
+                  />
+                </svg>
+                <span>Dodaj swoją dostępność</span>
+              </button>
+            ) : currentMonthSettings?.enabled ? (
+              <div className="availability-warning">
+                <span className="warning-icon">⛔</span>
+                <span>Nie możesz dodać dostępności w tym dniu</span>
+              </div>
+            ) : null}
 
             <div className="day-events-list">
               {getAllEventsForDate(formatDateToYMD(selectedDayDetail)).map(
@@ -2704,15 +2916,21 @@ export default function EmployeeView() {
                   ></i>
                 </div>
                 <p>Brak wydarzeń w tym dniu</p>
-                <button
-                  className="btn btn-primary btn-small"
-                  onClick={() => {
-                    setSelectedDayDetail(null);
-                    handleDateClick(selectedDayDetail);
-                  }}
-                >
-                  Dodaj swoją dostępność
-                </button>
+                {currentMonthSettings?.enabled &&
+                  selectedDayDetail.getDate() >=
+                    currentMonthSettings.startDay &&
+                  selectedDayDetail.getDate() <=
+                    currentMonthSettings.endDay && (
+                    <button
+                      className="btn btn-primary btn-small"
+                      onClick={() => {
+                        setSelectedDayDetail(null);
+                        handleDateClick(selectedDayDetail);
+                      }}
+                    >
+                      Dodaj swoją dostępność
+                    </button>
+                  )}
               </div>
             )}
           </div>
