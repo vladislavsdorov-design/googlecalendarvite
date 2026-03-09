@@ -2602,6 +2602,9 @@ function AdminApp() {
       const isToday = formatDateToYMD(new Date()) === dateStr;
       const hasPending = dayEvents.some((e) => e.isPending);
 
+      // Проверяем, доступен ли этот день для сотрудников
+      const isAvailableForEmployees = isDayAvailableForEmployees(date);
+
       days.push(
         <div
           key={day}
@@ -2609,13 +2612,18 @@ function AdminApp() {
             isToday ? "today" : ""
           } ${selectedDate === dateStr ? "selected" : ""} ${
             isCopyMode ? "copy-mode" : ""
-          }`}
+          } ${isAvailableForEmployees ? "available-for-employees" : ""}`}
           onClick={() => {
-            // Здесь мы не используем event, просто вызываем handleDateClick
             handleDateClick(date);
           }}
         >
           <div className="day-number">{day}</div>
+
+          {isAvailableForEmployees && !hasEvent && (
+            <div className="availability-indicator-small">
+              <span>📋</span>
+            </div>
+          )}
 
           {hasEvent && (
             <div className="shift-square">
@@ -2625,9 +2633,9 @@ function AdminApp() {
                     key={event.id}
                     className={`shift-item ${
                       event.isPending ? "pending" : ""
-                    } ${event.title === "Dostępność" ? "availability" : ""} ${
-                      isCopyMode ? "copyable" : ""
-                    }`}
+                    } ${
+                      event.title === "Dostępność" ? "availability-item" : ""
+                    } ${isCopyMode ? "copyable" : ""}`}
                     style={{
                       backgroundColor: event.user?.color || "#4A90E2",
                       opacity: event.isPending ? 0.55 : 1,
@@ -2644,7 +2652,6 @@ function AdminApp() {
                       } else if (isCopyMode) {
                         handleCopyEvent(event, event.isPending, dateStr);
                       } else {
-                        // Новая логика: если это доступность - открываем модалку подтверждения
                         if (event.title === "Dostępność" && event.isPending) {
                           setSelectedEventForConfirm(event);
                           setShowConfirmModal(true);
@@ -2708,7 +2715,18 @@ function AdminApp() {
   const setIsLoading = (value) => {
     setLoading(value);
   };
+  // Добавьте эту функцию в AdminApp
+  const isDayAvailableForEmployees = (date) => {
+    const monthKey = `${date.getFullYear()}-${String(
+      date.getMonth() + 1
+    ).padStart(2, "0")}`;
+    const monthSettings = availabilitySettings?.[monthKey];
 
+    if (!monthSettings || !monthSettings.enabled) return false;
+
+    const day = date.getDate();
+    return day >= monthSettings.startDay && day <= monthSettings.endDay;
+  };
   if (loading) {
     return (
       <div className="loading-screen">
