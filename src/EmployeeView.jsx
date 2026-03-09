@@ -1931,26 +1931,44 @@ export default function EmployeeView() {
   };
 
   // ОБНОВЛЕННАЯ ФУНКЦИЯ: обработка клика по дате с проверкой доступности
+  // ИСПРАВЛЕННАЯ ФУНКЦИЯ: обработка клика по дате с проверкой доступности для конкретного месяца
   const handleDateClick = (date) => {
     if (!employee) return;
 
-    // Проверяем, разрешено ли добавлять доступность в этот день
-    if (currentMonthSettings && !currentMonthSettings.enabled) {
-      alert(
-        "⛔ Dodawanie dostępności jest obecnie wyłączone przez administratora"
-      );
+    // Получаем ключ месяца для выбранной даты
+    const monthKey = `${date.getFullYear()}-${String(
+      date.getMonth() + 1
+    ).padStart(2, "0")}`;
+
+    // Получаем настройки для конкретного месяца из availabilitySettings
+    const monthSettings = availabilitySettings?.[monthKey];
+
+    console.log(
+      "Клик по дате:",
+      date,
+      "Месяц:",
+      monthKey,
+      "Настройки:",
+      monthSettings
+    );
+
+    // Проверяем, есть ли настройки для этого месяца
+    if (!monthSettings) {
+      alert("⛔ Administrator nie skonfigurował dostępności dla tego miesiąca");
       return;
     }
 
-    // Проверяем, входит ли день в разрешенный диапазон
+    // Проверяем, включена ли доступность для этого месяца
+    if (!monthSettings.enabled) {
+      alert("⛔ Dodawanie dostępności jest wyłączone dla tego miesiąca");
+      return;
+    }
+
+    // Проверяем, входит ли день в разрешенный диапазон для ЭТОГО месяца
     const day = date.getDate();
-    if (
-      currentMonthSettings &&
-      currentMonthSettings.enabled &&
-      (day < currentMonthSettings.startDay || day > currentMonthSettings.endDay)
-    ) {
+    if (day < monthSettings.startDay || day > monthSettings.endDay) {
       alert(
-        `⛔ Możesz dodawać dostępność tylko od ${currentMonthSettings.startDay} do ${currentMonthSettings.endDay} dnia miesiąca`
+        `⛔ Możesz dodawać dostępność tylko od ${monthSettings.startDay} do ${monthSettings.endDay} dnia miesiąca`
       );
       return;
     }
@@ -2125,11 +2143,15 @@ export default function EmployeeView() {
   };
 
   // ОБНОВЛЕННАЯ ФУНКЦИЯ: рендер месяца с подсветкой разрешенных дней
+  // ОБНОВЛЕННАЯ ФУНКЦИЯ: рендер месяца с подсветкой разрешенных дней для конкретного месяца
   const renderMonthView = () => {
     if (!employee) return null;
 
     const year = currentDate.getFullYear();
     const month = currentDate.getMonth();
+    const monthKey = `${year}-${String(month + 1).padStart(2, "0")}`;
+    const monthSettings = availabilitySettings?.[monthKey];
+
     const daysInMonth = getDaysInMonth(year, month);
     const firstDay = getFirstDayOfMonth(year, month);
 
@@ -2144,11 +2166,11 @@ export default function EmployeeView() {
       const dateStr = formatDateToYMD(date);
       const dayEvents = getAllEventsForDate(dateStr);
 
-      // НОВОЕ: проверка, разрешено ли добавлять доступность в этот день
+      // Проверка для КОНКРЕТНОГО месяца
       const isAvailabilityAllowed =
-        currentMonthSettings?.enabled &&
-        day >= (currentMonthSettings?.startDay || 1) &&
-        day <= (currentMonthSettings?.endDay || 31);
+        monthSettings?.enabled &&
+        day >= (monthSettings?.startDay || 1) &&
+        day <= (monthSettings?.endDay || 31);
 
       const isToday = formatDateToYMD(new Date()) === dateStr;
 
@@ -2216,15 +2238,19 @@ export default function EmployeeView() {
       const date = new Date(startOfWeek);
       date.setDate(startOfWeek.getDate() + i);
       const dateStr = formatDateToYMD(date);
+      const monthKey = `${date.getFullYear()}-${String(
+        date.getMonth() + 1
+      ).padStart(2, "0")}`;
+      const monthSettings = availabilitySettings?.[monthKey];
+
       const dayEvents = getAllEventsForDate(dateStr);
       const isToday = formatDateToYMD(new Date()) === dateStr;
 
-      // НОВОЕ: проверка разрешенных дней
+      // Проверка для КОНКРЕТНОГО месяца даты
       const isAvailabilityAllowed =
-        currentMonthSettings?.enabled &&
-        date.getDate() >= (currentMonthSettings?.startDay || 1) &&
-        date.getDate() <= (currentMonthSettings?.endDay || 31) &&
-        date.getMonth() === currentDate.getMonth();
+        monthSettings?.enabled &&
+        date.getDate() >= (monthSettings?.startDay || 1) &&
+        date.getDate() <= (monthSettings?.endDay || 31);
 
       days.push(
         <div
@@ -2413,22 +2439,6 @@ export default function EmployeeView() {
               <span className="user-email">{employee.email}</span>
             </div>
           </div>
-
-          {/* НОВЫЙ ИНДИКАТОР СТАТУСА ДОСТУПНОСТИ */}
-          {currentMonthSettings && (
-            <div
-              className={`availability-indicator ${
-                currentMonthSettings.enabled ? "allowed" : "blocked"
-              }`}
-            >
-              <span className="indicator-dot"></span>
-              <span>
-                {currentMonthSettings.enabled
-                  ? `Dostępność: ${currentMonthSettings.startDay}-${currentMonthSettings.endDay}`
-                  : "Dostępność wyłączona"}
-              </span>
-            </div>
-          )}
         </div>
       </header>
 
@@ -2446,15 +2456,47 @@ export default function EmployeeView() {
       </div>
 
       <div className="controls-bar">
-        <ViewToggle view={calendarView} onViewChange={setCalendarView} />
         <MyShiftsToggle
           showOnlyMyShifts={showOnlyMyShifts}
           onToggle={setShowOnlyMyShifts}
         />
+        <ViewToggle view={calendarView} onViewChange={setCalendarView} />
+        {/* НОВЫЙ ИНДИКАТОР СТАТУСА ДОСТУПНОСТИ */}
+        {/* ИНДИКАТОР СТАТУСА ДЛЯ ТЕКУЩЕГО ОТОБРАЖАЕМОГО МЕСЯЦА */}
+        {availabilitySettings &&
+          (() => {
+            const monthKey = `${currentDate.getFullYear()}-${String(
+              currentDate.getMonth() + 1
+            ).padStart(2, "0")}`;
+            const monthSettings = availabilitySettings[monthKey];
+
+            if (monthSettings) {
+              return (
+                <div
+                  className={`availability-indicator ${
+                    monthSettings.enabled ? "allowed" : "blocked"
+                  }`}
+                >
+                  <span className="indicator-dot"></span>
+                  <span>
+                    {monthSettings.enabled
+                      ? `Dostępność: ${monthSettings.startDay}-${monthSettings.endDay}`
+                      : "Dostępność wyłączona dla tego miesiąca"}
+                  </span>
+                </div>
+              );
+            }
+            return (
+              <div className="availability-indicator blocked">
+                <span className="indicator-dot"></span>
+                <span>Brak konfiguracji dla tego miesiąca</span>
+              </div>
+            );
+          })()}
       </div>
 
       <div className="legend">
-        <div className="legend-item">
+        {/* <div className="legend-item">
           <div className="legend-dot my-shift"></div>
           <span>Moja dostępność</span>
         </div>
@@ -2465,7 +2507,7 @@ export default function EmployeeView() {
         <div className="legend-item">
           <div className="legend-dot pending"></div>
           <span>Oczekuje</span>
-        </div>
+        </div> */}
         {/* НОВЫЙ ЭЛЕМЕНТ ЛЕГЕНДЫ */}
         {currentMonthSettings?.enabled && (
           <div className="legend-item">
@@ -2799,34 +2841,48 @@ export default function EmployeeView() {
           </div>
 
           <div className="day-detail-content">
-            {/* НОВОЕ: проверка доступности перед показом кнопки добавления */}
-            {currentMonthSettings?.enabled &&
-            selectedDayDetail.getDate() >= currentMonthSettings.startDay &&
-            selectedDayDetail.getDate() <= currentMonthSettings.endDay ? (
-              <button
-                className="add-availability-button"
-                onClick={() => {
-                  setSelectedDayDetail(null);
-                  handleDateClick(selectedDayDetail);
-                }}
-              >
-                <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-                  <path
-                    d="M9 3V15M3 9H15"
-                    stroke="currentColor"
-                    strokeWidth="1.5"
-                    strokeLinecap="round"
-                  />
-                </svg>
-                <span>Dodaj swoją dostępność</span>
-              </button>
-            ) : currentMonthSettings?.enabled ? (
-              <div className="availability-warning">
-                <span className="warning-icon">⛔</span>
-                <span>Nie możesz dodać dostępności w tym dniu</span>
-              </div>
-            ) : null}
+            {(() => {
+              const monthKey = `${selectedDayDetail.getFullYear()}-${String(
+                selectedDayDetail.getMonth() + 1
+              ).padStart(2, "0")}`;
+              const monthSettings = availabilitySettings?.[monthKey];
 
+              if (
+                monthSettings?.enabled &&
+                selectedDayDetail.getDate() >= monthSettings.startDay &&
+                selectedDayDetail.getDate() <= monthSettings.endDay
+              ) {
+                return (
+                  <button
+                    className="add-availability-button"
+                    onClick={() => {
+                      setSelectedDayDetail(null);
+                      handleDateClick(selectedDayDetail);
+                    }}
+                  >
+                    <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+                      <path
+                        d="M9 3V15M3 9H15"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                    <span>Dodaj swoją dostępność</span>
+                  </button>
+                );
+              } else if (monthSettings?.enabled) {
+                return (
+                  <div className="availability-warning">
+                    <span className="warning-icon">
+                      <i className="fa-regular fa-face-meh-blank"></i>
+                    </span>
+                    <span>Nie możesz dodać dostępności w tym dniu</span>
+                  </div>
+                );
+              }
+              return null;
+            })()}
             <div className="day-events-list">
               {getAllEventsForDate(formatDateToYMD(selectedDayDetail)).map(
                 (event) => (
@@ -2916,21 +2972,31 @@ export default function EmployeeView() {
                   ></i>
                 </div>
                 <p>Brak wydarzeń w tym dniu</p>
-                {currentMonthSettings?.enabled &&
-                  selectedDayDetail.getDate() >=
-                    currentMonthSettings.startDay &&
-                  selectedDayDetail.getDate() <=
-                    currentMonthSettings.endDay && (
-                    <button
-                      className="btn btn-primary btn-small"
-                      onClick={() => {
-                        setSelectedDayDetail(null);
-                        handleDateClick(selectedDayDetail);
-                      }}
-                    >
-                      Dodaj swoją dostępność
-                    </button>
-                  )}
+                {(() => {
+                  const monthKey = `${selectedDayDetail.getFullYear()}-${String(
+                    selectedDayDetail.getMonth() + 1
+                  ).padStart(2, "0")}`;
+                  const monthSettings = availabilitySettings?.[monthKey];
+
+                  if (
+                    monthSettings?.enabled &&
+                    selectedDayDetail.getDate() >= monthSettings.startDay &&
+                    selectedDayDetail.getDate() <= monthSettings.endDay
+                  ) {
+                    return (
+                      <button
+                        className="btn btn-primary btn-small"
+                        onClick={() => {
+                          setSelectedDayDetail(null);
+                          handleDateClick(selectedDayDetail);
+                        }}
+                      >
+                        Dodaj swoją dostępność
+                      </button>
+                    );
+                  }
+                  return null;
+                })()}
               </div>
             )}
           </div>
