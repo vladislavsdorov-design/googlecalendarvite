@@ -2505,6 +2505,79 @@ function AdminApp() {
       alert("❌ Błąd podczas usuwania");
     }
   };
+  // Добавьте эту функцию в компонент AdminApp, рядом с другими handle функциями
+  const handleRevertToAvailability = async (event) => {
+    if (
+      !window.confirm(
+        "Czy na pewno chcesz przywrócić tę zmianę do statusu dostępności?"
+      )
+    )
+      return;
+
+    try {
+      // Создаем событие доступности
+      const availabilityEvent = {
+        ...event,
+        id: `pending_${Date.now()}_${Math.random().toString(36).substr(2, 6)}`,
+        title: "Dostępność",
+        isPending: true,
+        revertedAt: new Date().toISOString(),
+        revertedBy: user?.email,
+        originalEventId: event.id,
+      };
+
+      // Удаляем из всех возможных источников
+      let updatedConfirmedEvents = confirmedEvents;
+      let updatedPendingEvents = pendingEvents;
+      let updatedEvents = { ...events };
+
+      // Если событие было в confirmedEvents
+      if (confirmedEvents.some((e) => e.id === event.id)) {
+        updatedConfirmedEvents = confirmedEvents.filter(
+          (e) => e.id !== event.id
+        );
+      }
+
+      // Если событие было в pendingEvents
+      if (pendingEvents.some((e) => e.id === event.id)) {
+        updatedPendingEvents = pendingEvents.filter((e) => e.id !== event.id);
+      }
+
+      // Если событие было опубликовано (в events)
+      if (events[event.id]) {
+        const { [event.id]: removed, ...rest } = events;
+        updatedEvents = rest;
+
+        // Если есть googleEventId, удаляем из Google Calendar
+        if (isAuthorized && event.googleEventId) {
+          await deleteGoogleCalendarEvent(event.googleEventId).catch(
+            console.error
+          );
+        }
+      }
+
+      // Добавляем в pendingEvents
+      updatedPendingEvents = [...updatedPendingEvents, availabilityEvent];
+
+      // Сохраняем все списки
+      await saveConfirmedEvents(updatedConfirmedEvents);
+      await savePendingEvents(updatedPendingEvents);
+      setEvents(updatedEvents);
+
+      // Показываем уведомление
+      const toast = document.createElement("div");
+      toast.className = "copy-toast success";
+      toast.textContent = `✅ Przywrócono do dostępności`;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+
+      // Закрываем модалку
+      setShowModal(false);
+    } catch (error) {
+      console.error("Ошибка przywracania:", error);
+      alert("❌ Błąd podczas przywracania");
+    }
+  };
   const goToCurrentMonth = () => {
     setSelectedStatsMonth(new Date());
   };
@@ -3524,7 +3597,6 @@ function AdminApp() {
                 {users.length === 0 ? (
                   <div className="empty-users">
                     <p>Brak dodanych pracowników</p>
-
                     <button
                       className="btn btn-small"
                       onClick={() => {
@@ -3566,7 +3638,7 @@ function AdminApp() {
                     {eventForm.userIds.length > 0 && (
                       <div className="selected-users">
                         <span className="selected-count">
-                          {eventForm.id ? "Сотрудник:" : "Wybrane:"}{" "}
+                          {eventForm.id ? "Pracownik:" : "Wybrani:"}{" "}
                           {eventForm.userIds.length}
                         </span>
                         <div className="selected-tags">
@@ -3605,7 +3677,7 @@ function AdminApp() {
                       <i className="fa-brands fa-slack"></i>
                     )}
                   </div>
-                  <span className="spamzmiantit">
+                  <span className="mode-description">
                     {bulkMode
                       ? "Zmiany są dodawane do listy oczekujących"
                       : "Zmiany są natychmiast publikowane w Kalendarzu Google"}
@@ -3614,7 +3686,7 @@ function AdminApp() {
               )}
 
               {eventForm.isPending && (
-                <div className="mode-badge bulk">
+                <div className="mode-badge pending">
                   <span className="badge-icon">
                     <i className="fa-regular fa-hourglass"></i>
                   </span>
@@ -3645,14 +3717,87 @@ function AdminApp() {
 
             <div className="modal-footer">
               {eventForm.id && (
-                <button
-                  className="btn btn-danger"
-                  onClick={() =>
-                    handleDeleteEvent(eventForm.id, eventForm.isPending)
-                  }
-                >
-                  Usuń
-                </button>
+                <>
+                  {/* Кнопка Przywróć dostępność - показываем для всех типов событий, кроме Dostępność */}
+                  {eventForm.title !== "Dostępność" && (
+                    <button
+                      className="btn btn-warning"
+                      onClick={() => {
+                        // Находим оригинальное событие
+                        let originalEvent = null;
+
+                        // Сначала ищем в confirmedEvents
+                        originalEvent = confirmedEvents.find(
+                          (e) => e.id === eventForm.id
+                        );
+
+                        // Если не нашли, ищем в pendingEvents
+                        if (!originalEvent) {
+                          originalEvent = pendingEvents.find(
+                            (e) => e.id === eventForm.id
+                          );
+                        }
+
+                        // Если все еще не нашли, ищем в events (опубликованные)
+                        if (!originalEvent) {
+                          const eventFromEvents = events[eventForm.id];
+                          if (eventFromEvents) {
+                            originalEvent = {
+                              ...eventFromEvents,
+                              user: getUserById(eventFromEvents.userId),
+                            };
+                          }
+                        }
+
+                        if (originalEvent) {
+                          handleRevertToAvailability(originalEvent);
+                        } else {
+                          alert("Nie można znaleźć oryginalnego wydarzenia");
+                        }
+                      }}
+                      title="Przywróć do statusu dostępności"
+                    >
+                      <svg
+                        width="18"
+                        height="18"
+                        viewBox="0 0 20 20"
+                        fill="none"
+                        style={{ marginRight: "4px" }}
+                      >
+                        <path
+                          d="M4 10C4 6.68629 6.68629 4 10 4C13.3137 4 16 6.68629 16 10C16 13.3137 13.3137 16 10 16C7.5 16 5.5 14.5 4.5 12.5M4 10L7 7M4 10L7 13"
+                          stroke="currentColor"
+                          strokeWidth="1.5"
+                          strokeLinecap="round"
+                        />
+                      </svg>
+                      Przywróć dostępność
+                    </button>
+                  )}
+
+                  <button
+                    className="btn btn-danger"
+                    onClick={() =>
+                      handleDeleteEvent(eventForm.id, eventForm.isPending)
+                    }
+                  >
+                    <svg
+                      width="18"
+                      height="18"
+                      viewBox="0 0 20 20"
+                      fill="none"
+                      style={{ marginRight: "4px" }}
+                    >
+                      <path
+                        d="M4 6H16M14 6V14C14 15.1046 13.1046 16 12 16H8C6.89543 16 6 15.1046 6 14V6M8 4V2C8 1.44772 8.44772 1 9 1H11C11.5523 1 12 1.44772 12 2V4"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        strokeLinecap="round"
+                      />
+                    </svg>
+                    Usuń
+                  </button>
+                </>
               )}
               <button
                 className="btn btn-secondary"
