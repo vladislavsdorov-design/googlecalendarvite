@@ -1297,12 +1297,14 @@ function AdminApp() {
     });
   };
   // ============= МОДАЛКА ДЛЯ ПОДТВЕРЖДЕНИЯ ДОСТУПНОСТИ =============
+  // ============= МОДАЛКА ДЛЯ ПОДТВЕРЖДЕНИЯ ДОСТУПНОСТИ =============
   const ConfirmAvailabilityModal = ({
     show,
     onClose,
     event,
     user,
     onConfirm,
+    onDelete, // Добавьте этот пропс
   }) => {
     const [selectedTitle, setSelectedTitle] = useState("Recepcja");
     const [customTitle, setCustomTitle] = useState("");
@@ -1326,6 +1328,12 @@ function AdminApp() {
         return;
       }
       onConfirm(event, finalTitle, notes);
+    };
+
+    const handleDelete = () => {
+      if (window.confirm("Czy na pewno chcesz usunąć tę dostępność?")) {
+        onDelete(event.id);
+      }
     };
 
     return (
@@ -1474,6 +1482,23 @@ function AdminApp() {
           </div>
 
           <div className="modal-footer">
+            <button className="btn btn-danger" onClick={handleDelete}>
+              <svg
+                width="18"
+                height="18"
+                viewBox="0 0 20 20"
+                fill="none"
+                style={{ marginRight: "4px" }}
+              >
+                <path
+                  d="M4 6H16M14 6V14C14 15.1046 13.1046 16 12 16H8C6.89543 16 6 15.1046 6 14V6M8 4V2C8 1.44772 8.44772 1 9 1H11C11.5523 1 12 1.44772 12 2V4"
+                  stroke="currentColor"
+                  strokeWidth="1.5"
+                  strokeLinecap="round"
+                />
+              </svg>
+              Usuń
+            </button>
             <button className="btn btn-secondary" onClick={onClose}>
               Anuluj
             </button>
@@ -1577,7 +1602,32 @@ function AdminApp() {
       }
     );
   };
+  // Добавьте эту функцию рядом с другими handle функциями
+  const handleDeletePendingEvent = async (eventId) => {
+    if (!window.confirm("Czy na pewno chcesz usunąć tę dostępność?")) return;
 
+    try {
+      // Удаляем из pendingEvents
+      const updatedPendingEvents = pendingEvents.filter(
+        (e) => e.id !== eventId
+      );
+      await savePendingEvents(updatedPendingEvents);
+
+      // Показываем уведомление
+      const toast = document.createElement("div");
+      toast.className = "copy-toast success";
+      toast.textContent = `✅ Usunięto dostępność`;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+
+      // Закрываем модалку
+      setShowConfirmModal(false);
+      setSelectedEventForConfirm(null);
+    } catch (error) {
+      console.error("Ошибка удаления:", error);
+      alert("❌ Błąd podczas usuwania");
+    }
+  };
   const loadAvailabilitySettings = async () => {
     const settingsRef = ref(db, "settings/availability");
     onValue(settingsRef, (snapshot) => {
@@ -2888,6 +2938,7 @@ function AdminApp() {
             : null
         }
         onConfirm={handleConfirmAvailability}
+        onDelete={handleDeletePendingEvent} // Добавьте эту строку
       />
 
       {/* Остальные модалки (статистика, массовая публикация, пользователи и т.д.) */}
