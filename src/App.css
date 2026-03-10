@@ -455,6 +455,40 @@
   box-shadow: 0 24px 48px rgba(0, 0, 0, 0.2);
   display: flex;
   flex-direction: column;
+
+  /* Начальное состояние для анимации появления */
+  transform: scale(0.9);
+  opacity: 0;
+  animation: modalShow 0.3s ease forwards;
+}
+
+/* Класс для закрытия модалки */
+.modal.close {
+  animation: modalHide 0.3s ease forwards;
+}
+
+/* Анимация появления */
+@keyframes modalShow {
+  from {
+    transform: scale(0.9);
+    opacity: 0;
+  }
+  to {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+/* Анимация закрытия */
+@keyframes modalHide {
+  from {
+    transform: scale(1);
+    opacity: 1;
+  }
+  to {
+    transform: scale(0.9);
+    opacity: 0;
+  }
 }
 
 .modal-header {
@@ -883,6 +917,9 @@
 .users-list {
   display: grid;
   gap: 8px;
+  max-height: 400px;
+  overflow-y: auto;
+  padding-right: 8px;
 }
 
 .user-list-item {
