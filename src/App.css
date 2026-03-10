@@ -187,6 +187,7 @@
   padding: 10px 20px;
   border-radius: 12px;
   margin-bottom: 24px;
+  border-bottom: solid 1px #ededed;
 }
 
 .mode-indicator.normal-mode {

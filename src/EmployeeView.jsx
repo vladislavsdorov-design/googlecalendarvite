@@ -1433,6 +1433,8 @@ import {
 } from "firebase/database";
 import { initializeApp } from "firebase/app";
 import "./EmployeeView.css";
+import ScrollDownButton from "./ScrollDownButton";
+import ShiftReminder from "./ShiftReminder"; // Импортируйте по правильному пути
 
 // Firebase конфигурация из переменных окружения
 const firebaseConfig = {
@@ -1513,7 +1515,7 @@ const EmployeeLoginScreen = ({ onLogin, employees }) => {
     <div className="employee-login-container">
       <div className="employee-login-card">
         <div className="employee-login-header">
-          <div className="employee-login-icon">Baza24</div>
+          <div className="employee-login-icon">JetZone24</div>
           <h1 className="employee-login-title">Panel pracownika</h1>
           <p className="employee-login-subtitle">
             Zaloguj się, aby zarządzać swoją dostępnością
@@ -1555,9 +1557,9 @@ const EmployeeLoginScreen = ({ onLogin, employees }) => {
                 disabled={loading}
               />
             </div>
-            <div className="employee-password-hint">
+            {/* <div className="employee-password-hint">
               Domyślne hasło: {DEFAULT_PASSWORD}
-            </div>
+            </div> */}
           </div>
 
           {error && (
@@ -2454,7 +2456,12 @@ export default function EmployeeView() {
           <span>Kliknij na dzień, aby dodać swoją dostępność</span>
         </div>
       </div>
-
+      <ShiftReminder
+        events={events}
+        pendingEvents={pendingEvents}
+        currentDate={currentDate}
+        employee={employee}
+      />
       <div className="controls-bar">
         <MyShiftsToggle
           showOnlyMyShifts={showOnlyMyShifts}
@@ -2561,6 +2568,17 @@ export default function EmployeeView() {
       </div>
 
       <div className="calendar-container">{renderCalendar()}</div>
+      <footer className="footer">
+        <div className="footer-container">
+          <p className="footer-text">
+            &copy; {new Date().getFullYear()} JetZone24. Wszystkie prawa
+            zastrzeżone.
+          </p>
+          <p className="footer-subtext">
+            Dziękujemy za Twoją pracę i zaangażowanie w rozwój naszej firmy.
+          </p>
+        </div>
+      </footer>
 
       {/* Модалка доступности */}
       {showModal && (

@@ -19,6 +19,7 @@ import {
 } from "firebase/auth";
 import "./App.css";
 
+
 // Firebase конфигурация
 const firebaseConfig = {
   apiKey: import.meta.env.VITE_FIREBASE_API_KEY,

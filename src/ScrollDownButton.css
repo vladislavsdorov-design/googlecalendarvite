@@ -1,0 +1,183 @@
+/* ScrollDownButton.css */
+.scroll-down-button {
+  position: fixed;
+  bottom: 30px;
+  right: 30px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  z-index: 1000;
+  opacity: 0;
+  transform: translateY(20px);
+  transition: all 0.4s cubic-bezier(0.2, 0, 0, 1);
+  pointer-events: none;
+}
+
+.scroll-down-button.visible {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
+.scroll-down-button.hidden {
+  opacity: 0;
+  transform: translateY(20px);
+  pointer-events: none;
+}
+
+.circle {
+  width: var(--button-size, 50px);
+  height: var(--button-size, 50px);
+  background: #ffffff;
+  border: 2px solid var(--button-color, #000000);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.3s ease;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+  position: relative;
+  overflow: hidden;
+}
+
+.circle::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 0;
+  height: 0;
+  background: var(--button-color, #000000);
+  border-radius: 50%;
+  transform: translate(-50%, -50%);
+  transition: width 0.4s ease, height 0.4s ease;
+  z-index: 0;
+}
+
+.scroll-down-button:hover .circle::before {
+  width: 150%;
+  height: 150%;
+}
+
+.arrow-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1;
+}
+
+.arrow-container i {
+  position: absolute;
+  color: var(--button-color, #000000);
+  font-size: calc(var(--button-size, 50px) * 0.3);
+  transition: all 0.3s ease;
+}
+
+.scroll-down-button:hover .arrow-container i {
+  color: #ffffff;
+}
+
+.second-arrow {
+  opacity: 0;
+  transform: translateY(-10px);
+}
+
+.scroll-down-button:hover .second-arrow {
+  animation: arrowAppear 0.8s infinite ease-in-out;
+}
+
+.scroll-down-button.hovered .arrow-container i:first-child {
+  animation: arrowBounce 1s infinite ease-in-out;
+}
+
+.scroll-text {
+  color: var(--button-color, #000000);
+  font-size: 12px;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  opacity: 0;
+  transform: translateY(-5px);
+  transition: all 0.3s ease;
+  background: #ffffff;
+  padding: 4px 8px;
+  border-radius: 12px;
+  border: 1px solid rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.05);
+}
+
+.scroll-down-button:hover .scroll-text {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+/* Анимации */
+@keyframes arrowBounce {
+  0%,
+  100% {
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(5px);
+  }
+}
+
+@keyframes arrowAppear {
+  0% {
+    opacity: 0;
+    transform: translateY(-15px);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  100% {
+    opacity: 0;
+    transform: translateY(15px);
+  }
+}
+
+/* Позиция слева если нужно */
+.scroll-down-button.left {
+  right: auto;
+  left: 30px;
+}
+
+/* Для мобильных устройств */
+@media (max-width: 768px) {
+  .scroll-down-button {
+    bottom: 20px;
+    right: 20px;
+  }
+
+  .scroll-down-button.left {
+    left: 20px;
+  }
+
+  .circle {
+    --button-size: 45px;
+  }
+
+  .scroll-text {
+    font-size: 10px;
+    padding: 3px 6px;
+  }
+}
+
+/* Если нужно темную версию */
+@media (prefers-color-scheme: dark) {
+  .circle {
+    background: #1a1a1a;
+  }
+
+  .scroll-text {
+    background: #1a1a1a;
+    color: #ffffff;
+    border-color: rgba(255, 255, 255, 0.1);
+  }
+}
