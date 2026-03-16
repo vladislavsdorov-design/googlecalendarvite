@@ -1676,7 +1676,144 @@ export default function EmployeeView() {
   const [selectedDayDetail, setSelectedDayDetail] = useState(null);
   const [firebaseError, setFirebaseError] = useState(false);
   const [firebaseErrorMessage, setFirebaseErrorMessage] = useState("");
+  // ============= НОВЫЕ СОСТОЯНИЯ ДЛЯ GOOGLE CALENDAR =============
+  const [googleAuthError, setGoogleAuthError] = useState(null);
+  const [googleConnecting, setGoogleConnecting] = useState(false);
+  const [tokenExpiryTime, setTokenExpiryTime] = useState(null);
 
+  // ============= ФУНКЦИИ ДЛЯ РАБОТЫ С GOOGLE CALENDAR =============
+
+  // Функция проверки токена Google
+  const checkGoogleToken = async (token) => {
+    try {
+      const response = await fetch(
+        `https://www.googleapis.com/oauth2/v1/tokeninfo?access_token=${token}`
+      );
+      const data = await response.json();
+
+      if (data.error) {
+        console.error("Ошибка токена Google:", data.error);
+        setGoogleAuthError("Sesja Google wygasła. Zaloguj się ponownie.");
+        return false;
+      }
+
+      // Проверяем срок действия токена
+      if (data.expires_in) {
+        const expiryTime = Date.now() + data.expires_in * 1000;
+        setTokenExpiryTime(expiryTime);
+
+        // Если осталось меньше 5 минут, показываем предупреждение
+        if (data.expires_in < 300) {
+          setGoogleAuthError(
+            "Sesja Google wkrótce wygaśnie. Odśwież połączenie."
+          );
+        } else {
+          setGoogleAuthError(null);
+        }
+      }
+
+      return true;
+    } catch (error) {
+      console.error("Ошибка проверки токена:", error);
+      setGoogleAuthError("Problem z połączeniem Google");
+      return false;
+    }
+  };
+
+  // Функция обновления подключения к Google
+  const refreshGoogleConnection = async () => {
+    setGoogleConnecting(true);
+    setGoogleAuthError(null);
+
+    try {
+      // Удаляем старый токен
+      localStorage.removeItem("google_token");
+      setIsAuthorized(false);
+
+      // Открываем окно авторизации заново
+      const redirectUri = encodeURIComponent(window.location.origin);
+      const scope = encodeURIComponent(SCOPES);
+      const authUrl = `https://accounts.google.com/o/oauth2/auth?client_id=${CLIENT_ID}&redirect_uri=${redirectUri}&response_type=token&scope=${scope}&prompt=consent`;
+
+      const width = 500;
+      const height = 600;
+      const left = (window.screen.width - width) / 2;
+      const top = (window.screen.height - height) / 2;
+
+      const win = window.open(
+        authUrl,
+        "Google Auth",
+        `width=${width},height=${height},left=${left},top=${top}`
+      );
+
+      setAuthWindow(win);
+
+      // Ждем сообщения от окна авторизации
+      const messageHandler = (event) => {
+        if (event.origin !== window.location.origin) return;
+        if (event.data.type === "google_auth_success") {
+          const token = event.data.token;
+          localStorage.setItem("google_token", token);
+          setIsAuthorized(true);
+          checkGoogleToken(token);
+
+          if (win) win.close();
+          window.removeEventListener("message", messageHandler);
+          setGoogleConnecting(false);
+        }
+      };
+
+      window.addEventListener("message", messageHandler);
+
+      // Таймаут на случай, если окно закрыли
+      setTimeout(() => {
+        window.removeEventListener("message", messageHandler);
+        setGoogleConnecting(false);
+        if (!isAuthorized) {
+          setGoogleAuthError("Nie udało się połączyć. Spróbuj ponownie.");
+        }
+      }, 60000); // 1 минута
+    } catch (error) {
+      console.error("Ошибка обновления подключения:", error);
+      setGoogleAuthError("Błąd podczas odświeżania połączenia");
+      setGoogleConnecting(false);
+    }
+  };
+
+  // Функция отключения от Google
+  const disconnectGoogle = () => {
+    if (window.confirm("Czy na pewno chcesz odłączyć Google Calendar?")) {
+      localStorage.removeItem("google_token");
+      setIsAuthorized(false);
+      setTokenExpiryTime(null);
+      setGoogleAuthError(null);
+
+      // Показываем уведомление
+      const toast = document.createElement("div");
+      toast.className = "copy-toast success";
+      toast.textContent = "✅ Odłączono od Google Calendar";
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+  };
+
+  // Автоматическая проверка токена при загрузке и периодически
+  useEffect(() => {
+    const token = localStorage.getItem("google_token");
+    if (token) {
+      checkGoogleToken(token);
+
+      // Проверяем каждые 5 минут
+      const interval = setInterval(() => {
+        const currentToken = localStorage.getItem("google_token");
+        if (currentToken) {
+          checkGoogleToken(currentToken);
+        }
+      }, 300000); // 5 минут
+
+      return () => clearInterval(interval);
+    }
+  }, []);
   // НОВЫЕ СОСТОЯНИЯ ДЛЯ НАСТРОЕК ДОСТУПНОСТИ
   const [availabilitySettings, setAvailabilitySettings] = useState(null);
   const [currentMonthSettings, setCurrentMonthSettings] = useState(null);
