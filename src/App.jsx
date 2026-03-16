@@ -11,6 +11,7 @@ import {
   get,
 } from "firebase/database";
 import EmployeeView from "./EmployeeView.jsx";
+import { Analytics } from "@vercel/analytics/react";
 import {
   getAuth,
   signInWithEmailAndPassword,
@@ -4324,6 +4325,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<AdminApp />} />
         <Route path="/employee" element={<EmployeeView />} />
+        <Analytics />
       </Routes>
     </Router>
   );
