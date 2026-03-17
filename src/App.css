@@ -450,7 +450,7 @@
   border-radius: 16px;
   width: 800px;
   max-width: calc(100vw - 48px);
-  max-height: calc(100vh - 48px);
+  max-height: calc(100vh - 180px);
   overflow: hidden;
   box-shadow: 0 24px 48px rgba(0, 0, 0, 0.2);
   display: flex;
