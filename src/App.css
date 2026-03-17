@@ -770,6 +770,7 @@
   color: white;
   border: solid 1px black;
   transition: 0.3s;
+  display: flex;
   font-family: "Montserrat", sans-serif;
 }
 .btn-primary:hover {

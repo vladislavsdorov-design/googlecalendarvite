@@ -843,6 +843,8 @@ const EventsListModal = ({
   onEditEvent,
   users,
   onConfirmClick,
+  onAddNewEvent, // новый пропс
+  selectedDate, // нужна дата для создания нового события
 }) => {
   if (!show) return null;
 
@@ -854,6 +856,12 @@ const EventsListModal = ({
             Wydarzenia dnia{" "}
             {events[0]?.date
               ? new Date(events[0].date).toLocaleDateString("pl-PL", {
+                  day: "numeric",
+                  month: "long",
+                  year: "numeric",
+                })
+              : selectedDate
+              ? new Date(selectedDate).toLocaleDateString("pl-PL", {
                   day: "numeric",
                   month: "long",
                   year: "numeric",
@@ -924,7 +932,7 @@ const EventsListModal = ({
                         className="event-action-btn confirm"
                         onClick={(e) => {
                           e.stopPropagation();
-                          onConfirmClick(event); // Открываем новую модалку
+                          onConfirmClick(event);
                         }}
                         title="Potwierdź dostępność"
                       >
@@ -975,9 +983,35 @@ const EventsListModal = ({
           </div>
         </div>
 
-        <div className="modal-footer">
+        <div
+          className="modal-footer"
+          style={{ justifyContent: "space-between" }}
+        >
           <button className="btn btn-secondary" onClick={onClose}>
             Zamknij
+          </button>
+          <button
+            className="btn btn-primary"
+            onClick={() => {
+              onAddNewEvent(selectedDate);
+              onClose();
+            }}
+          >
+            <svg
+              width="18"
+              height="18"
+              viewBox="0 0 20 20"
+              fill="none"
+              style={{ marginRight: "4px" }}
+            >
+              <path
+                d="M10 4V16M4 10H16"
+                stroke="currentColor"
+                strokeWidth="1.5"
+                strokeLinecap="round"
+              />
+            </svg>
+            Dodaj nową zmianę
           </button>
         </div>
       </div>
@@ -2403,37 +2437,78 @@ function AdminApp() {
   };
 
   const handleDeleteEvent = async (eventId, isPending = false) => {
-    if (!window.confirm("Usunąć tę zmianę?")) return;
+    if (!window.confirm("Czy na pewno chcesz usunąć tę zmianę?")) return;
 
-    if (isPending) {
-      const newPendingEvents = pendingEvents.filter((e) => e.id !== eventId);
-      savePendingEvents(newPendingEvents);
-    } else {
-      const event = events[eventId];
-      if (isAuthorized && event?.googleEventId) {
-        await deleteGoogleCalendarEvent(event.googleEventId);
+    try {
+      console.log("Usuwanie wydarzenia:", eventId, "isPending:", isPending);
+
+      if (isPending) {
+        // Удаляем из confirmedEvents (Oczekujące)
+        const inConfirmed = confirmedEvents.some((e) => e.id === eventId);
+        const inPending = pendingEvents.some((e) => e.id === eventId);
+
+        console.log("Znalezione w:", { inConfirmed, inPending });
+
+        if (inConfirmed) {
+          const newConfirmedEvents = confirmedEvents.filter(
+            (e) => e.id !== eventId
+          );
+          console.log("Nowa lista confirmedEvents:", newConfirmedEvents);
+          await saveConfirmedEvents(newConfirmedEvents);
+          setConfirmedEvents(newConfirmedEvents);
+        }
+
+        if (inPending) {
+          const newPendingEvents = pendingEvents.filter(
+            (e) => e.id !== eventId
+          );
+          console.log("Nowa lista pendingEvents:", newPendingEvents);
+          await savePendingEvents(newPendingEvents);
+          setPendingEvents(newPendingEvents);
+        }
+
+        // Обновляем selectedDateEvents если модалка открыта
+        if (showEventsListModal && selectedDate) {
+          const updatedEvents = getAllEventsForDate(selectedDate);
+          setSelectedDateEvents(updatedEvents);
+        }
+      } else {
+        // Удаляем опубликованное событие
+        const event = events[eventId];
+        if (isAuthorized && event?.googleEventId) {
+          await deleteGoogleCalendarEvent(event.googleEventId);
+        }
+        await deleteEventFromFirebase(eventId);
+
+        setEvents((prev) => {
+          const newEvents = { ...prev };
+          delete newEvents[eventId];
+          return newEvents;
+        });
+
+        // Обновляем selectedDateEvents если модалка открыта
+        if (showEventsListModal && selectedDate) {
+          const updatedEvents = getAllEventsForDate(selectedDate);
+          setSelectedDateEvents(updatedEvents);
+        }
       }
-      await deleteEventFromFirebase(eventId);
 
-      setEvents((prev) => {
-        const newEvents = { ...prev };
-        delete newEvents[eventId];
-        return newEvents;
-      });
-    }
+      // Показываем уведомление
+      const toast = document.createElement("div");
+      toast.className = "copy-toast success";
+      toast.textContent = `✅ Usunięto zmianę`;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
 
-    if (eventForm.id === eventId) {
+      // ЗАКРЫВАЕМ МОДАЛКУ ПОСЛЕ УДАЛЕНИЯ
+      setShowEventsListModal(false);
+
+      // Также закрываем другие модалки если они открыты
       setShowModal(false);
-      setEventForm({
-        id: null,
-        title: "Recepcja",
-        date: formatDateToYMD(new Date()),
-        startTime: "13:00",
-        endTime: "20:00",
-        userIds: [],
-        sendEmail: true,
-        isPending: false,
-      });
+      setShowConfirmModal(false);
+    } catch (error) {
+      console.error("Ошибка удаления:", error);
+      alert("❌ Błąd podczas usuwania");
     }
   };
 
@@ -2445,35 +2520,19 @@ function AdminApp() {
       (e) => e.date === dateStr
     );
     const pendingEventsOnDate = pendingEvents.filter((e) => e.date === dateStr);
+    const confirmedEventsOnDate = confirmedEvents.filter(
+      (e) => e.date === dateStr
+    );
 
     const allEventsOnDate = [
       ...publishedEventsOnDate.map((e) => ({ ...e, isPending: false })),
       ...pendingEventsOnDate.map((e) => ({ ...e, isPending: true })),
+      ...confirmedEventsOnDate.map((e) => ({ ...e, isPending: true })),
     ];
 
-    if (allEventsOnDate.length === 0) {
-      // Если нет событий - открываем модалку создания
-      setEventForm({
-        id: null,
-        title: "Recepcja",
-        date: dateStr,
-        startTime: "13:00",
-        endTime: "20:00",
-        userIds: [],
-        sendEmail: true,
-        isPending: false,
-      });
-      setShowModal(true);
-    } else if (allEventsOnDate.length === 1) {
-      const firstEvent = allEventsOnDate[0];
-      // Если это доступность - НЕ открываем модалку подтверждения здесь,
-      // потому что это сделает обработчик клика на событии
-      // Просто ничего не делаем
-    } else {
-      // Если несколько событий - показываем список
-      setSelectedDateEvents(allEventsOnDate);
-      setShowEventsListModal(true);
-    }
+    // ВСЕГДА открываем модалку со списком событий
+    setSelectedDateEvents(allEventsOnDate);
+    setShowEventsListModal(true);
   };
 
   const handleShiftClick = (e, event, isPending) => {
@@ -3248,6 +3307,21 @@ function AdminApp() {
           setShowConfirmModal(true);
           setShowEventsListModal(false);
         }}
+        onAddNewEvent={(date) => {
+          // Открываем форму создания нового события в режиме "Oczekujące"
+          setEventForm({
+            id: null,
+            title: "Recepcja",
+            date: date || formatDateToYMD(new Date()),
+            startTime: "13:00",
+            endTime: "20:00",
+            userIds: [],
+            sendEmail: true,
+            isPending: true, // Важно: устанавливаем isPending в true
+          });
+          setShowModal(true);
+        }}
+        selectedDate={selectedDate}
         users={users}
       />
       {/* Модалка подтверждения доступности */}
